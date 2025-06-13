@@ -50,3 +50,4 @@ Thumbs.db
 # RAG specific
 rag_cache/
 .data/raw/
+/chat_history/

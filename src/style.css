@@ -1,0 +1,80 @@
+/* General body styling */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Main chat container */
+.st-emotion-cache-1jicfl2 {
+    padding-top: 2rem;
+}
+
+/* Chat message styling */
+[data-testid="stChatMessage"] {
+    background-color: #2b313e;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #3c4554;
+}
+
+[data-testid="stChatMessageContent"] {
+    color: #e0e0e0;
+}
+
+div[data-testid="stChatMessage"]:has(div[data-testid="stAvatarIcon-user"]) {
+    background-color: #3b5bdb;
+    border-color: #4a6fff;
+}
+
+/* Chat input box styling */
+[data-testid="stChatInput"] {
+    background-color: #1e2128;
+    border-top: 1px solid #3c4554;
+    padding: 1rem;
+}
+[data-testid="stTextInput"] textarea {
+    background-color: #2b313e;
+    color: #e0e0e0;
+    border-radius: 8px;
+    border: 1px solid #3c4554;
+}
+
+/* Sidebar styling */
+[data-testid="stSidebar"] {
+    background-color: #1e2128;
+    padding: 1rem;
+}
+.st-emotion-cache-16txtl3 { /* Sidebar title color */
+    color: #e0e0e0;
+}
+.st-emotion-cache-1v0mbdj a { /* Link color in sidebar */
+    color: #3b5bdb;
+}
+
+/* Button styling */
+.stButton>button {
+    background-color: #3b5bdb;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    padding: 0.5rem 1rem;
+    transition: background-color 0.2s ease;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+.stButton>button:hover {
+    background-color: #2944b5;
+}
+
+/* Small buttons for history */
+.st-emotion-cache-7ym5gk button {
+    background-color: transparent;
+    border: 1px solid #3c4554;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    width: auto;
+}
+.st-emotion-cache-7ym5gk button:hover {
+    background-color: #3c4554;
+}
