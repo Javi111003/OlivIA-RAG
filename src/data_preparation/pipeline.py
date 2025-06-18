@@ -1,119 +1,70 @@
-# src/data_preparation/pipeline.py
+# src/pipeline.py
 
 import os
 import json
-from typing import List, Dict, Any
-from tqdm import tqdm # Para barras de progreso
+import sys
+
+# Añadir el directorio raíz del proyecto al sys.path para importaciones
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
 from src.data_preparation.document_loader import DocumentLoader
 from src.data_preparation.text_cleaner import TextCleaner
-import src.data_preparation.config as config # Importa el archivo de configuración
+from src.data_preparation.chunker import SemanticChunker
+from src.embedding_models.embedding_generator import EmbeddingGenerator
+from src.vector_db.chroma_store import ChromaVectorStore
 
-class DataPreparationPipeline:
+def run_ingestion_pipeline():
     """
-    Orquesta los pasos de carga, limpieza y pre-procesamiento de documentos.
+    Ejecuta el pipeline completo desde la carga de documentos hasta la generación
+    de embeddings y su almacenamiento en la base de datos vectorial.
     """
-    def __init__(self):
-        self.loader = DocumentLoader(tesseract_cmd_path=config.RUTA_TESSERACT_CMD)
-        self.cleaner = TextCleaner(lang_model="es_core_news_sm")
-        self.processed_docs_info = [] # Para almacenar metadatos de documentos procesados
+    
+    # 1. Rutas de directorios
+    RAW_DATA_ROOT = os.path.join(project_root, '.data', 'raw')
+    PROCESSED_DATA_DIR = os.path.join(project_root, '.data', 'processed')
+    CHUNKS_DIR = os.path.join(PROCESSED_DATA_DIR, 'chunks')
+    EMBEDDINGS_DIR = os.path.join(PROCESSED_DATA_DIR, 'embeddings')
+    CHROMA_DB_PATH = os.path.join(project_root, '.chroma_db')
 
-    def _get_document_paths(self, subject: str = None) -> List[str]:
-        """
-        Obtiene una lista de rutas de archivos de los documentos raw.
-        Si se especifica un subject, solo busca en esa carpeta.
-        """
-        base_path = config.RAW_DATA_DIR
-        paths = []
-        if subject:
-            subject_path = os.path.join(base_path, subject)
-            if os.path.isdir(subject_path):
-                for root, _, files in os.walk(subject_path):
-                    for file in files:
-                        if file.startswith('.'): # Ignorar archivos ocultos
-                            continue
-                        paths.append(os.path.join(root, file))
-            else:
-                print(f"Advertencia: La carpeta para la asignatura '{subject}' no existe en {base_path}")
-        else: # Procesar todas las asignaturas
-            for subject_dir in os.listdir(base_path):
-                subject_path = os.path.join(base_path, subject_dir)
-                if os.path.isdir(subject_path):
-                    for root, _, files in os.walk(subject_path):
-                        for file in files:
-                            if file.startswith('.'):
-                                continue
-                            paths.append(os.path.join(root, file))
-        return paths
+    # Crear directorios si no existen
+    os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
+    os.makedirs(CHUNKS_DIR, exist_ok=True)
+    os.makedirs(EMBEDDINGS_DIR, exist_ok=True)
 
-    def run_pipeline(self, subject: str = None):
-        """
-        Ejecuta el pipeline de preparación de datos: carga y limpieza.
-        Guarda el texto limpio en un archivo JSON en data/processed/chunks/.
-        """
-        document_paths = self._get_document_paths(subject)
-        if not document_paths:
-            print("No se encontraron documentos para procesar.")
-            return
+    # 2. Cargar documentos
+    loader = DocumentLoader(base_data_dir=RAW_DATA_ROOT)
+    all_extracted_elements = loader.load_all_documents_from_base_dir()
 
-        print(f"Iniciando procesamiento de {len(document_paths)} documentos...")
-        processed_data_output = []
+    if not all_extracted_elements:
+        print("No se extrajeron elementos de los documentos. Abortando pipeline.")
+        return
 
-        for doc_path in tqdm(document_paths, desc="Procesando documentos"):
-            doc_name = os.path.basename(doc_path)
-            doc_id = os.path.splitext(doc_name)[0] # Usar nombre de archivo como ID inicial
-            
-            # Inferir asignatura del path (ej. data/raw/matematica/ -> matematica)
-            try:
-                doc_subject = doc_path.split(os.sep)[-2]
-            except IndexError:
-                doc_subject = "unknown" # Fallback si la estructura de la ruta no es la esperada
+    # 3. Limpiar texto
+    cleaner = TextCleaner()
+    # Aplicar lematización: True para lematizar, False para solo limpiar
+    cleaned_elements = cleaner.clean_documents(all_extracted_elements, apply_lemmatization=False)
+    
+    # 4. Chunking Semántico
+    chunker = SemanticChunker()
+    chunks = chunker.chunk_documents(cleaned_elements)
 
-            print(f"Cargando y limpiando: {doc_name}")
-            raw_text = self.loader.load_document(doc_path)
+    # 5. Generación de Embeddings
+    embedding_generator = EmbeddingGenerator()
+    chunks_with_embeddings = embedding_generator.generate_embeddings_for_chunks(chunks)
 
-            if raw_text:
-                cleaned_text = self.cleaner.clean_text(raw_text)
-                # lemmatized_text = self.cleaner.lemmatize_text(cleaned_text)
+    # Guardar chunks con embeddings
+    embeddings_output_path = os.path.join(EMBEDDINGS_DIR, 'chunks_with_embeddings.json')
+    with open(embeddings_output_path, 'w', encoding='utf-8') as f:
+        json.dump(chunks_with_embeddings, f, indent=2, ensure_ascii=False)
+    print(f"Chunks con embeddings guardados en: {embeddings_output_path}")
 
-                # Almacenar la información del documento limpio
-                processed_data_output.append({
-                    "document_id": doc_id,
-                    "file_name": doc_name,
-                    "subject": doc_subject,
-                    "cleaned_text": cleaned_text,
-                    # "lemmatized_text": lemmatized_text # Si lo usas
-                })
-                print(f"Documento {doc_name} procesado y listo para chunking.")
-            else:
-                print(f"No se pudo procesar el documento: {doc_name}. Saltando.")
+    # 6. Almacenar en ChromaDB
+    vector_store = ChromaVectorStore(path=CHROMA_DB_PATH)
+    vector_store.add_chunks(chunks_with_embeddings)
+    print(f"Total de chunks en ChromaDB: {vector_store.count_chunks()}")
+    
+    print("\nPipeline de ingesta completado exitosamente.")
 
-        # Guardar los textos limpios en un archivo JSON en data/processed/chunks/
-        # Aunque el nombre sea 'chunks', por ahora contiene el documento completo limpio.
-        # En la siguiente fase, este archivo se dividirá en chunks más pequeños.
-        output_file_name = f"cleaned_documents_{subject if subject else 'all'}.json"
-        output_path = os.path.join(config.CHUNKS_DIR, output_file_name) # Se guarda en la carpeta de chunks
-        
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(processed_data_output, f, ensure_ascii=False, indent=4)
-        
-        print(f"Procesamiento inicial completado. Textos limpios guardados en: {output_path}")
-        self.processed_docs_info = processed_data_output
-        return processed_data_output
-
-# Para ejecutar el pipeline desde la línea de comandos
 if __name__ == "__main__":
-    # Ejemplo: crea un archivo de texto simple y guárdalo como test.txt en esa carpeta para probar
-    # O mejor aún, usa tus PDFs reales.
-
-    # Para procesar solo documentos de Matemática
-    pipeline = DataPreparationPipeline()
-    math_docs = pipeline.run_pipeline(subject="math")
-
-    # Para procesar documentos de todas las asignaturas
-    # all_docs = pipeline.run_pipeline(subject=None)
-
-    # Puedes imprimir los primeros 500 caracteres del texto limpio del primer documento para verificar
-    if math_docs:
-        print("\nPrimeros 500 caracteres del texto limpio del primer documento procesado:")
-        print(math_docs[0]['cleaned_text'][:500])
-        print(f"Guardado en: {os.path.join(config.CHUNKS_DIR, 'cleaned_documents_matematica.json')}")
+    run_ingestion_pipeline()
