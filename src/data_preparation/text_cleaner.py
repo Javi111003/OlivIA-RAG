@@ -2,44 +2,45 @@
 
 import re
 import unicodedata
-from typing import List, Optional
-
+from typing import List, Dict, Any, Optional
 
 import spacy
-_ = spacy.load("es_core_news_sm")
+
+try:
+    nlp_model = spacy.load("es_core_news_sm")
+    # añadir stopwords personalizadas aquí si es necesario
+    # nlp_model.Defaults.stop_words.add("ej.")
+except Exception as e:
+    nlp_model = None
+    print(f"No se pudo cargar el modelo de SpaCy 'es_core_news_sm': {e}")
+    print("La lematización y el filtrado de stopwords no se aplicarán en TextCleaner.")
+
 
 class TextCleaner:
     """
     Clase para limpiar y normalizar texto extraído de documentos académicos.
     Aplica una serie de operaciones de pre-procesamiento para preparar el texto
     para su posterior segmentación, embedding y construcción del grafo de conocimiento.
+    Ahora trabaja con la salida estructurada de Unstructured.io (lista de diccionarios).
     """
-    def __init__(self, lang_model: str = "es_core_news_sm"):
+    def __init__(self):
         """
-        Inicializa el limpiador de texto con un modelo de SpaCy para lematización y stopwords.
-        :param lang_model: Nombre del modelo de SpaCy para español (ej., 'es_core_news_sm').
+        Inicializa el limpiador de texto. El modelo de SpaCy se carga una vez a nivel de módulo.
         """
-        self.nlp = None
-        if spacy:
-            try:
-                self.nlp = spacy.load(lang_model)
-                # Añadir patrones de detención específicos si es necesario (ej. palabras cubanas)
-                # self.nlp.Defaults.stop_words.add("ej.")
-            except Exception as e:
-                print(f"No se pudo cargar el modelo de SpaCy '{lang_model}': {e}")
-                print("La lematización y el filtrado de stopwords no se aplicarán.")
+        self.nlp = nlp_model # Usar la instancia cargada globalmente
 
     def extract_math_formulas(self, text: str):
-    # Extrae expresiones matemáticas tipo $...$ o ecuaciones simples
+
         pattern = r"""
-            (                           # Grupo principal
-            \$.*?\$                 # Fórmulas entre $...$
-            |\[.*?\]                # Fórmulas entre \[...\]
-            |\\begin\{equation\}.*?\\end\{equation\}   # Ambientes equation
-            |[A-Za-z0-9\s\^\_\+\-\*/\(\)\[\]=\.]+(?:=|<=|>=|<|>)[A-Za-z0-9\s\^\_\+\-\*/\(\)\[\]=\.]+  # Ecuaciones tipo texto plano
+            (                                       # Grupo principal
+            \$.*?\$                                 # Fórmulas entre $...$
+            |\[.*?\]                                 # Fórmulas entre \[...\] (Latex display math)
+            |\\begin\{equation\}.*?\\end\{equation\} # Ambientes equation
+            |[\w\s\^\_\+\-\*/\(\)\[\]=\.]+(?:=|<=|>=|<|>)[A-Za-z0-9\s\^\_\+\-\*/\(\)\[\]=\.]+ # Ecuaciones tipo texto plano
             )
         """
-        formulas = re.findall(pattern, text)
+        formulas = re.findall(pattern, text, re.VERBOSE | re.DOTALL)
+        
         text_sin_formulas = text
         for i, formula in enumerate(formulas):
             text_sin_formulas = text_sin_formulas.replace(formula, f"__FORMULA_{i}__")
@@ -47,177 +48,187 @@ class TextCleaner:
     
     def reincorporate_formulas(self, text: str, formulas: List[str]):
         for i, formula in enumerate(formulas):
-            text = text.replace(f"__FORMULA_{i}__", formula)
+            text = re.sub(re.escape(f"__FORMULA_{i}__"), formula, text, 1)
         return text
 
-
     def remove_extra_whitespace(self, text: str) -> str:
-        """
-        Elimina múltiples espacios en blanco, saltos de línea y tabs,
-        reemplazándolos por un solo espacio. También elimina espacios al inicio y al final.
-        """
         text = re.sub(r'\s+', ' ', text)
         text = text.strip()
         return text
 
     def normalize_unicode(self, text: str) -> str:
-        """
-        Normaliza caracteres Unicode a su forma NFKD (ej., convierte 'á' a 'a', 'ñ' a 'n').
-        Esto es útil para estandarizar el texto y evitar problemas de codificación o búsqueda.
-        """
         return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
 
     def remove_headers_footers(self, text: str, common_patterns: Optional[List[str]] = None) -> str:
         """
-        Intenta eliminar patrones comunes de encabezados y pies de página que suelen
-        aparecer en documentos escaneados o digitalizados.
-
-        :param text: El texto a limpiar.
-        :param common_patterns: Una lista de expresiones regulares para identificar
-                                encabezados y pies de página. Si es None, usa un conjunto por defecto.
+        Intenta eliminar patrones comunes de encabezados y pies de página.
+        Ajustado para no eliminar títulos de documentos completos.
         """
         if common_patterns is None:
-            # Estos patrones son ejemplos. Deberás ajustarlos para los documentos
-            # específicos de los exámenes de ingreso y libros de texto cubanos.
             common_patterns = [
                 r'(?i)página\s+\d+\s+de\s+\d+',      # "Página 1 de 10" (case-insensitive)
                 r'^\s*\d+\s*$',                      # Líneas que contienen solo un número (posible número de página)
                 r'^\s*\[\s*\d+\s*\]\s*$',            # Números de página entre corchetes "[ 5 ]"
+                # Patrones más específicos para temas, solo si se repiten de forma identificable como header/footer
                 r'(?i)matemática\s*(?:[a-z]{1,2}\.)?\s*(?:-\s*\d+)?', # "Matemática", "Matemática V.", "Matemática - 10"
                 r'(?i)español-literatura\s*(?:[a-z]{1,2}\.)?\s*(?:-\s*\d+)?',
                 r'(?i)historia\s*(?:[a-z]{1,2}\.)?\s*(?:-\s*\d+)?',
-                r'(?i)(?:libro|guía|examen|programa)\s+de\s+\S+\s*(?:[a-z]{1,2}\.)?', # "Libro de Matemática"
-                # Añade aquí patrones específicos que encuentres en tus documentos
-                # Ejemplo: r'Ministerio de Educación\s*-\s*Cuba'
-                # Ejemplo: r'Centro Preuniversitario\s+\S+'
+                # REMOVIDO: r'(?i)(?:libro|guía|examen|programa)\s+de\s+\S+\s*(?:[a-z]{1,2}\.)?',
+                r'Ministerio de Educación\s*-\s*Cuba',
+                r'Centro Preuniversitario\s+\S+'
             ]
 
         cleaned_text = text
         for pattern in common_patterns:
-            # flags=re.MULTILINE permite que '^' y '$' coincidan con el inicio/fin de cada línea
-            # flags=re.IGNORECASE hace que la búsqueda no distinga mayúsculas de minúsculas
             cleaned_text = re.sub(pattern, '', cleaned_text, flags=re.MULTILINE | re.IGNORECASE)
         return cleaned_text
 
     def remove_urls(self, text: str) -> str:
-        """Elimina URLs (direcciones web) del texto."""
-        # Un patrón de regex común para URLs
         return re.sub(r'(https?://[^\s]+)|(www\.[^\s]+)', '', text)
 
     def remove_emails(self, text: str) -> str:
-        """Elimina direcciones de correo electrónico del texto."""
         return re.sub(r'\S*@\S*\s?', '', text)
 
-    def remove_non_alphanumeric(self, text: str, keep_punctuation: str = '.,!?;:^') -> str:
-        """
-        Elimina caracteres no alfanuméricos (que no son letras, números o espacios),
-        excepto la puntuación especificada. Esto ayuda a limpiar caracteres extraños.
-
-        :param text: El texto a limpiar.
-        :param keep_punctuation: Una cadena de caracteres de puntuación que se deben conservar.
-                                 Por defecto, conserva los signos de puntuación comunes.
-        """
-        # Escapa los caracteres de puntuación para que se interpreten literalmente en la regex
+    def remove_non_alphanumeric(self, text: str, keep_punctuation: str = '.,!?;:()[]{}%+-ⁿ₋₊–*/=^<>∅∈√∛⊆⊄℃⁰¹²³⁴⁵⁶⁷⁸⁹¼⅓⅖⅙⅛⅞↉⅟⅒⅝⅐⅘⅕¾∉∩∪≈≤≥⊈⊂∜∞∝') -> str:
         pattern = r'[^\w\s' + re.escape(keep_punctuation) + r']'
         text = re.sub(pattern, '', text)
         return text
 
     def convert_to_lowercase(self, text: str) -> str:
-        """Convierte todo el texto a minúsculas para normalización."""
         return text.lower()
 
     def remove_stopwords_and_lemmatize(self, text: str, include_stopwords: bool = False) -> str:
-        """
-        Lematiza el texto (reduce las palabras a su forma base) y opcionalmente
-        elimina las palabras vacías (stopwords) usando SpaCy.
-        Esto es útil para reducir la dimensionalidad y mejorar la relevancia en la búsqueda.
-
-        :param text: El texto a procesar.
-        :param include_stopwords: Si es True, no elimina las stopwords.
-        """
         if not self.nlp:
-            print("Advertencia: SpaCy no está cargado. No se aplicará lematización ni filtrado de stopwords.")
-            return text # Retorna el texto original si SpaCy no está disponible
+            return text
 
         doc = self.nlp(text)
         tokens = []
         for token in doc:
-            # Solo añadir si no es un espacio en blanco y no es una stopword (si include_stopwords es False)
             if not token.is_space:
                 if include_stopwords or (not token.is_stop):
-                    tokens.append(token.lemma_) # Añade el lema (forma base de la palabra)
+                    tokens.append(token.lemma_)
         return " ".join(tokens)
 
-    def clean_text(self, text: str, apply_lemmatization: bool = False) -> str:
+    def clean_element_content(self, content: str, element_type: str, apply_lemmatization: bool = False) -> str:
         """
-        Aplica una secuencia predefinida de operaciones de limpieza al texto.
+        Aplica una secuencia predefinida de operaciones de limpieza al contenido de un solo elemento.
+        Permite adaptar la limpieza según el tipo de elemento.
 
-        :param text: El texto en bruto a limpiar.
+        :param content: El texto en bruto del elemento a limpiar.
+        :param element_type: El tipo de elemento (ej., 'Title', 'NarrativeText', 'Table').
         :param apply_lemmatization: Si es True, aplica lematización y elimina stopwords.
         """
-        cleaned_text , formulas = self.extract_math_formulas(text)
-        cleaned_text = self.remove_extra_whitespace(text)
-        cleaned_text = self.remove_headers_footers(cleaned_text) # Ejecutar ANTES de normalizar a minúsculas
-                                                                # por si los patrones tienen mayúsculas exactas
-        cleaned_text = self.remove_urls(cleaned_text)
-        cleaned_text = self.remove_emails(cleaned_text)
-        cleaned_text = self.normalize_unicode(cleaned_text) # Después de quitar URLs/Emails por si tienen acentos
-        cleaned_text = self.remove_non_alphanumeric(cleaned_text, keep_punctuation='.,!?;:()[]{}%+-ⁿ₋₊–*/=^<>∅∈√∛⊆⊄℃⁰¹²³⁴⁵⁶⁷⁸⁹¼⅓⅖⅙⅛⅞↉⅟⅒⅝⅐⅘⅕¾∉∩∪≈≤≥⊈⊂∜∞∝') # Añade símbolos matemáticos
-        cleaned_text = self.convert_to_lowercase(cleaned_text) # Convertir a minúsculas al final, después de procesar patrones sensibles a mayúsculas
+        formulas = []
+        cleaned_content = self.remove_urls(content)
+        cleaned_content = self.remove_emails(cleaned_content)      
+                
+        cleaned_content, formulas = self.extract_math_formulas(cleaned_content)
+                
+        # Consideraciones especiales según el tipo de elemento
+        if element_type == 'Table':
+            # Las tablas ya vienen en Markdown
+            cleaned_content = self.remove_extra_whitespace(cleaned_content)
+            if formulas: 
+                cleaned_content = self.reincorporate_formulas(cleaned_content, formulas)
+                
+            return cleaned_content # Terminar aquí para tablas
 
+        # Limpieza general para otros tipos de elementos (NarrativeText, Title, CompositeElement, etc.)
+        cleaned_content = self.remove_headers_footers(cleaned_content) 
+        cleaned_content = self.remove_extra_whitespace(cleaned_content)    
+        cleaned_content = self.normalize_unicode(cleaned_content) 
+        cleaned_content = self.remove_non_alphanumeric(cleaned_content, keep_punctuation='.,!?;:()[]{}%+-ⁿ₋₊–*/=^<>∅∈√∛⊆⊄℃⁰¹²³⁴⁵⁶⁷⁸⁹¼⅓⅖⅙⅛⅞↉⅟⅒⅝⅐⅘⅕¾∉∩∪≈≤≥⊈⊂∜∞∝●')
+        if formulas:
+            cleaned_content = self.reincorporate_formulas(cleaned_content, formulas)
         if apply_lemmatization:
-            cleaned_text = self.remove_stopwords_and_lemmatize(cleaned_text)
+            cleaned_content = self.remove_stopwords_and_lemmatize(cleaned_content)
+        cleaned_content = self.convert_to_lowercase(cleaned_content) 
+        cleaned_content = self.remove_extra_whitespace(cleaned_content) 
+        return cleaned_content
 
-        if(len(formulas)>0):
-            print(formulas)
-            cleaned_text = self.reincorporate_formulas(cleaned_text, formulas) # Reincorporar las fórmulas matemáticas
+    def clean_documents(self, elements: List[Dict[str, Any]], apply_lemmatization: bool = False) -> List[Dict[str, Any]]:
+        """
+        Limpia una lista de elementos de documento estructurados (salida de DocumentLoader).
+        Itera sobre cada elemento, limpia su contenido y devuelve la lista actualizada.
 
-        cleaned_text = self.remove_extra_whitespace(cleaned_text) # Una pasada final para limpiar espacios sobrantes
+        :param elements: Una lista de diccionarios, donde cada diccionario es un elemento
+                         extraído por Unstructured.io (content + metadata).
+        :param apply_lemmatization: Si es True, aplica lematización y elimina stopwords.
+        :return: La lista de elementos con el contenido limpio.
+        """
+        cleaned_elements: List[Dict[str, Any]] = []
+        for element in elements:
+            original_content = element.get("content", "")
+            element_type = element["metadata"].get("type", "NarrativeText") # Obtener el tipo de elemento
+            
+            cleaned_content = self.clean_element_content(original_content, element_type, apply_lemmatization)
+            
+            cleaned_element = element.copy()
+            cleaned_element["content"] = cleaned_content
+            cleaned_element["cleaned_content"] = cleaned_content  
+            cleaned_elements.append(cleaned_element)
+            
+        return cleaned_elements
 
-        return cleaned_text
-
-# Ejemplo de uso (esto es solo para demostración, la lógica principal iría en pipeline.py)
+# --- Código de prueba (para ejecutar este módulo directamente) ---
 if __name__ == "__main__":
+    import os
+    import sys
+    import uuid
+
+    sample_elements_from_loader = [
+        {
+            "content": "EXAMEN DE INGRESO A LA EDUCACIÓN SUPERIOR\n\nCurso 2017-2018 1ra convocatoria\n\n1. Lee detenidamente y responde.\n\n1.1. Clasifica las siguientes proposiciones en verdaderas (V) o falsas (F). Escribe V o F en la línea dada. De las que consideres falsas, justifica por qué lo son.\n\na) ___ Sean A y B dos conjuntos no vacíos tales que, xA y xA\\\\B, entonces xB.\n\nb) ___ La función f definida en {x: x > 3} por la ecuación\n\nf(x) = log(x – 3) es inyectiva.",
+            "metadata": {
+                "source": "dummy_doc.pdf", "page_number": 1, "coordinates": None,
+                "type": "CompositeElement", "chunk_id": str(uuid.uuid4())
+            }
+        },
+        {
+            "content": "1.2.2. En la figura se muestra el arco que\n\ny (en metros)\n\ndescribe un puente elevado que tiene forma\n\nde parábola, cuya ecuación es\n\ny =\n\n441 ye, 2 160\n\n. Si la altura máxima del\n\nA ● 0 80 x (en metros)\n\npuente la alcanza en el punto A, entonces su altura es igual a:\n\na) ___ 5 m b) ___ 10 m c) ___ 40 m d) ___ 80 m\n\n1.3. Completa los espacios en blanco de forma que se obtenga una proposición verdadera para cada caso:\n\nSean A(– 4 ; 1) ; B(1 ; – 1) ; C(3 ; 1) y D(– 2 ; 3), los vértices",
+            "metadata": {
+                "source": "dummy_doc.pdf", "page_number": 2, "coordinates": None,
+                "type": "CompositeElement", "chunk_id": str(uuid.uuid4())
+            }
+        },
+        {
+            "content": "consecutivos de un paralelogramo ABCD.\n\n1.3.1. La diagonal tiene una longitud igual a _____ unidades. 1.3.2. La recta que contiene a la diagonal tiene como ecuación\n\n________.\n\n2. En la figura se muestra una circunferencia de centro O y diámetro\n\nAB\n\n, además se conoce que:\n\nradiosOB, OC\n\nM, N y P son puntos de los radios\n\ny\n\nrespectivamente,\n\nOMNP rombo,\n\n=",
+            "metadata": {
+                "source": "dummy_doc.pdf", "page_number": 2, "coordinates": None,
+                "type": "CompositeElement", "chunk_id": str(uuid.uuid4())
+            }
+        },
+        {
+            "content": "| Header de prueba |\n|---|---|\n| Dato 1 | Valor A |\n| Dato 2 | Valor B |\n\nTexto adicional después de la tabla.",
+            "metadata": {
+                "source": "dummy_doc.pdf", "page_number": 3, "coordinates": None,
+                "type": "Table", "chunk_id": str(uuid.uuid4())
+            }
+        },
+        {
+            "content": "Capítulo 5: Teoremas Fundamentales\nPara más información, visite www.ejemplo.com o escriba a contacto@email.org.\n[ 10 ]",
+            "metadata": {
+                "source": "dummy_doc.pdf", "page_number": 10, "coordinates": None,
+                "type": "Title", "chunk_id": str(uuid.uuid4())
+            }
+        }
+    ]
+
     cleaner = TextCleaner()
 
-    sample_text_math = """
-    Página 3 de 20
-    MINISTERIO DE EDUCACIÓN - CUBA
-    Guía de Matemática Superior [Capítulo 2.1]
-    Ejercicio 5: Resuelva la ecuación cuadrática $x^2 + 2x - 3 = 0$.
-    Para más información, visite www.matematica.edu.cu o escriba a info@edu.cu.
-    ¡Importante! Consulte la sección 4.2 para teoremas relacionados.
-    Este es un texto con    espacios   extra y
-    saltos de línea.
-    La solución implica el Teorema de Pitágoras (a^2+b^2=c^2).
-    """
+    print("--- Elementos Originales ---")
+    for i, elem in enumerate(sample_elements_from_loader):
+        print(f"\nElemento {i+1} (Tipo: {elem['metadata']['type']}):")
+        print(elem['content'][:200]) # Mostrar solo el inicio 
 
-    print("--- Texto Original de Matemáticas ---")
-    print(sample_text_math)
+    print("\n--- Elementos Limpios (sin lematización) ---")
+    cleaned_elements_no_lemma = cleaner.clean_documents(sample_elements_from_loader, apply_lemmatization=False)
+    for i, elem in enumerate(cleaned_elements_no_lemma):
+        print(f"\nElemento {i+1} (Tipo: {elem['metadata']['type']}):")
+        print(elem['content'][:200])
 
-    print("\n--- Texto Limpio (sin lematización) ---")
-    cleaned_math_text = cleaner.clean_text(sample_text_math, apply_lemmatization=False)
-    print(cleaned_math_text)
-
-    print("\n--- Texto Limpio y Lematizado (sin stopwords ni puntuación, excepto símbolos) ---")
-    lemmatized_math_text = cleaner.clean_text(sample_text_math, apply_lemmatization=True)
-    print(lemmatized_math_text)
-
-    sample_text_history = """
-    Historia de Cuba - Período Colonial
-    Capítulo 1: La Conquista y Colonización.
-    [Página 15]
-    En 1492, Cristóbal Colón llegó a la isla de Cuba, un evento trascendental.
-    Los taínos habitaban la región. La fecha clave es 1492.
-    Para dudas, contacte a historiadores@cuba.gov.cu.
-    """
-    print("\n--- Texto Original de Historia ---")
-    print(sample_text_history)
-
-    print("\n--- Texto Limpio de Historia (sin lematización) ---")
-    cleaned_history_text = cleaner.clean_text(sample_text_history, apply_lemmatization=False)
-    print(cleaned_history_text)
-
-    print("\n--- Texto Limpio y Lematizado de Historia ---")
-    lemmatized_history_text = cleaner.clean_text(sample_text_history, apply_lemmatization=True)
-    print(lemmatized_history_text)
+    print("\n--- Elementos Limpios y Lematizados ---")
+    cleaned_elements_with_lemma = cleaner.clean_documents(sample_elements_from_loader, apply_lemmatization=True)
+    for i, elem in enumerate(cleaned_elements_with_lemma):
+        print(f"\nElemento {i+1} (Tipo: {elem['metadata']['type']}):")
+        print(elem['content'][:200])
