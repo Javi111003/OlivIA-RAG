@@ -21,7 +21,7 @@ Nuestro objetivo es proporcionar una herramienta interactiva y eficiente que com
 * **Interacción Conversacional**: Mantiene el contexto de la conversación para un diálogo fluido y natural, adaptándose al ritmo de aprendizaje del estudiante.
 * **Base de Conocimiento Curada**: Construida a partir de libros de texto oficiales, programas de estudio y exámenes de ingreso anteriores del sistema educativo cubano.
 * **Arquitectura RAG Avanzada**: Utiliza técnicas de recuperación híbrida, re-ranking y un Grafo de Conocimiento para asegurar la máxima precisión y relevancia en la información.
-* **Agentic RAG**: Implementa un sistema de agentes inteligentes para la planificación, ejecución y reflexión sobre las interacciones, simulando el comportamiento de un tutor humano.
+* **Agentic Supervisor**: Implementa un sistema de agentes inteligentes para la planificación, ejecución y reflexión sobre las interacciones, simulando el comportamiento de un tutor humano.
 
 ---
 
@@ -34,7 +34,7 @@ OlivIA está construido predominantemente en **Python** y utiliza las siguientes
 * **Frameworks RAG y NLP**: `LangChain`, `sentence-transformers`, `SpaCy`, `NLTK`.
 * **Extracción de Documentos**: `PyPDF2`, `python-docx`, `BeautifulSoup4`, `Pytesseract` (para OCR).
 * **Base de Datos Vectorial**: `ChromaDB` (para prototipado y despliegues locales) o `FAISS` + `pgvector` (para soluciones más escalables).
-* **Base de Datos de Grafo (Knowledge Graph)**: `Neo4j` (recomendado) para almacenar y consultar el conocimiento estructurado.
+* **Base de Datos de Grafo (Knowledge Graph)**: `Neo4j` para almacenar y consultar el conocimiento estructurado.
 * **Gestión de Dependencias**: `pip` y `requirements.txt` (o `Poetry`/`Rye`/`PDM` con `pyproject.toml`).
 
 ---
@@ -75,7 +75,7 @@ intelligent-tutor-rag/
 
 │   ├── generator/           # Interfaz con LLM y generación de respuestas
 
-│   ├── agents/              # Implementación de la arquitectura de agentes (planificación, reflexión, herramientas)
+│   ├── agents/              # Implementación de la arquitectura de agentes (Supervisor)
 
 │   ├── core/                # Lógica central del sistema tutor
 
