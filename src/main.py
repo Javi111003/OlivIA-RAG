@@ -7,6 +7,31 @@ import json
 import glob
 from datetime import datetime
 
+# Todo esto es la parte del Scrapy, la dejo arriba para que se vea 
+import threading
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
+from web_crawler.MathCrawlerScraper.spiders.math_spider import MathSpider
+from web_crawler.MathCrawlerScraper.spiders.dispatch_spider import DispatchSpider
+
+# --- AQUI ESTA LA MAGIA DEL CRAWLER ---
+# --- Se crea un hilo para echar a correr la arania y que esta no moleste el chat ---
+
+def run_dispatch_spider(query): # Usa esta funcion para llamar a la arana dinamica si no se encuentran resultados
+    """Ejecuta dinámicamente la araña Dispatch con una consulta dada."""
+    process = CrawlerProcess(get_project_settings())
+    process.crawl(DispatchSpider, query=query)
+    process.start()
+
+def run_math_spider(): 
+    process = CrawlerProcess(get_project_settings())
+    process.crawl(MathSpider)
+    process.start()
+
+def start_math_crawler_background(): # Esta funcion se mandara a correr en cuanto se ponga el programa
+    t = threading.Thread(target=run_math_spider, daemon=True)
+    t.start()
+
 # --- CONFIGURATION ---
 # Load environment variables from .env file.
 load_dotenv()
@@ -67,7 +92,7 @@ load_css(os.path.join(os.path.dirname(__file__), "style.css"))
 
 # Run setup
 setup()
-
+start_math_crawler_background()
 def sanitize_filename(filename):
     # Remove invalid characters for Windows filenames
     return re.sub(r'[<>:"/\\|?*]', '', filename)
