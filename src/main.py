@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import json
 import glob
 from datetime import datetime
+from generator.llm_provider import MistralLLMProvider
+from types import GeneratorType
 
 # Todo esto es la parte del Scrapy, la dejo arriba para que se vea 
 import threading
@@ -17,29 +19,37 @@ from web_crawler.MathCrawlerScraper.spiders.dispatch_spider import DispatchSpide
 # --- AQUI ESTA LA MAGIA DEL CRAWLER ---
 # --- Se crea un hilo para echar a correr la arania y que esta no moleste el chat ---
 
-def run_dispatch_spider(query): # Usa esta funcion para llamar a la arana dinamica si no se encuentran resultados
-    """Ejecuta dinámicamente la araña Dispatch con una consulta dada."""
-    process = CrawlerProcess(get_project_settings())
-    process.crawl(DispatchSpider, query=query)
-    process.start()
-
-def run_math_spider(): 
-    process = CrawlerProcess(get_project_settings())
-    process.crawl(MathSpider)
-    process.start()
-
-def start_math_crawler_background(): # Esta funcion se mandara a correr en cuanto se ponga el programa
-    t = threading.Thread(target=run_math_spider, daemon=True)
-    t.start()
+#def run_dispatch_spider(query): # Usa esta funcion para llamar a la arana dinamica si no se encuentran resultados
+#    """Ejecuta dinámicamente la araña Dispatch con una consulta dada."""
+#    process = CrawlerProcess(get_project_settings())
+#    process.crawl(DispatchSpider, query=query)
+#    process.start()
+#
+#def run_math_spider(): 
+#    process = CrawlerProcess(get_project_settings())
+#    process.crawl(MathSpider)
+#    process.start()
+#
+#def start_math_crawler_background(): # Esta funcion se mandara a correr en cuanto se ponga el programa
+#    t = threading.Thread(target=run_math_spider, daemon=True)
+#    t.start()
 
 # --- CONFIGURATION ---
 # Load environment variables from .env file.
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
 
-MODEL_NAME = "mistral-small-latest"
-API_URL = "https://api.mistral.ai/v1/chat/completions"
+#MODEL_NAME = "mistral-small-latest"
+#API_URL = "https://api.mistral.ai/v1/chat/completions"
 HISTORY_DIR = "chat_history"
+
+llm = None 
+try:
+    llm = MistralLLMProvider()
+    
+except Exception as e:
+    st.error(f"Error initializing Mistral LLM Provider. {e}")
+    st.stop()
 
 # --- HELPER FUNCTIONS ---
 
@@ -50,7 +60,7 @@ def setup():
     
     # Initialize session state for messages if it doesn't exist
     if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "system", "content": "You are a helpful and concise assistant."}]
+        st.session_state.messages = [{"role": "system", "content": "Eres OlívIA, un tutor de matemáticas amigable y experto en preparación para exámenes de ingreso a la universidad. Siempre responde de manera clara, concisa y enfócate en la explicación de conceptos matemáticos."}]
     if "current_chat" not in st.session_state:
         st.session_state.current_chat = "new_chat"
 
@@ -83,7 +93,7 @@ def get_chat_history_files():
 
 # --- PAGE SETUP ---
 st.set_page_config(
-    page_title="Sophisticated Chatbot",
+    page_title="OlivIA",
     page_icon="✨",
     layout="centered",
     initial_sidebar_state="auto",
@@ -92,46 +102,10 @@ load_css(os.path.join(os.path.dirname(__file__), "style.css"))
 
 # Run setup
 setup()
-start_math_crawler_background()
+#start_math_crawler_background()
 def sanitize_filename(filename):
     # Remove invalid characters for Windows filenames
     return re.sub(r'[<>:"/\\|?*]', '', filename)
-
-# --- API COMMUNICATION ---
-def get_mistral_stream(messages):
-    """Sends a request to the Mistral API and yields the response chunks."""
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-    body = {
-        "model": MODEL_NAME,
-        "messages": messages,
-        "temperature": 0.7,
-        "stream": True,
-    }
-    try:
-        response = requests.post(API_URL, headers=headers, json=body, stream=True)
-        response.raise_for_status()
-        
-        for line in response.iter_lines():
-            if line:
-                line_str = line.decode('utf-8')
-                if line_str.startswith('data: '):
-                    json_str = line_str[len('data: '):]
-                    if json_str.strip() == '[DONE]':
-                        break
-                    try:
-                        chunk = json.loads(json_str)
-                        if 'choices' in chunk and chunk['choices'][0]['delta']['content']:
-                            yield chunk['choices'][0]['delta']['content']
-                    except json.JSONDecodeError:
-                        continue
-                        
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error connecting to Mistral API: {e}")
-        yield ""
-
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -188,7 +162,7 @@ if user_input := st.chat_input("What can I help you with today?"):
 
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Thinking..."):
-            response_stream = get_mistral_stream(st.session_state.messages)
+            response_stream = llm.chat_completion(st.session_state.messages, stream=True)
             full_response = st.write_stream(response_stream)
 
     if full_response:
