@@ -7,12 +7,12 @@ from typing import List, Dict, Any, Optional
 import spacy
 
 try:
-    nlp_model = spacy.load("es_core_news_sm")
+    nlp_model = spacy.load("es_core_news_md")
     # añadir stopwords personalizadas aquí si es necesario
     # nlp_model.Defaults.stop_words.add("ej.")
 except Exception as e:
     nlp_model = None
-    print(f"No se pudo cargar el modelo de SpaCy 'es_core_news_sm': {e}")
+    print(f"No se pudo cargar el modelo de SpaCy 'es_core_news_md': {e}")
     print("La lematización y el filtrado de stopwords no se aplicarán en TextCleaner.")
 
 

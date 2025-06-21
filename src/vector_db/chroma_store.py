@@ -3,7 +3,7 @@
 import chromadb
 from typing import List, Dict, Any
 import os
-import uuid # Para generar IDs si es necesario
+import uuid
 
 class ChromaVectorStore:
     """
@@ -43,8 +43,6 @@ class ChromaVectorStore:
         metadatas = []
         embeddings = []
 
-        # Asegúrate de que los IDs sean únicos y no existan ya en la colección
-        # Obtener los IDs existentes en la colección para evitar duplicados
         existing_ids = set()
         try:
             # Intentar obtener todos los IDs existentes (puede ser lento para colecciones muy grandes)
@@ -82,9 +80,11 @@ class ChromaVectorStore:
             # ChromaDB almacena los metadatos como JSON.
             # Convertimos page_numbers a lista de ints si es necesario, o asegurarnos que ya lo sea
             metadata_to_store = chunk['metadata'].copy()
-            if 'page_numbers' in metadata_to_store and isinstance(metadata_to_store['page_numbers'], list):
-                metadata_to_store['page_numbers'] = [int(p) for p in metadata_to_store['page_numbers']]
-
+            metadata_to_store = chunk['metadata'].copy()
+            for key, value in metadata_to_store.items():
+                if isinstance(value, list):
+                    # Convierte la lista a string, por ejemplo: "1,2,3"
+                    metadata_to_store[key] = ",".join(map(str, value))
             metadatas.append(metadata_to_store) 
             embeddings.append(chunk['embedding'])
 
@@ -148,74 +148,73 @@ class ChromaVectorStore:
         print(f"Colección '{self.collection_name}' recreada.")
 
 # Ejemplo de uso (ejecuta este bloque para probar la base de datos vectorial)
-if __name__ == "__main__":
-    from src.embedding_models.embedding_generator import EmbeddingGenerator
-    import json
-    import os
-    
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-    chunks_with_embeddings_path = os.path.join(project_root, '.data', 'processed', 'chunks','chunks_with_embeddings.json')
-    chroma_db_path = os.path.join(project_root, '.chroma_db')
+#if __name__ == "__main__":
+    #from src.embedding_models.embedding_generator import EmbeddingGenerator
+    #import json
+    #import os
+    #project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    #chunks_with_embeddings_path = os.path.join(project_root, '.data', 'processed', 'embeddings','chunks_with_embeddings.json')
+    #chroma_db_path = os.path.join(project_root, '.chroma_db')
+#
+    #chunks_with_embeddings = []
+    #if not os.path.exists(chunks_with_embeddings_path):
+    #    print(f"Error: {chunks_with_embeddings_path} no encontrado.")
+    #    print("Por favor, ejecuta 'src/embeddings/embedding_generator.py' primero para generar el archivo.")
+    #    # Generar datos de prueba si no hay un archivo existente
+    #    generator = EmbeddingGenerator()
+    #    sample_chunks_for_test = [
+    #        {"content": "la historia de cuba es fascinante, con muchos eventos importantes.", "metadata": {"chunk_id": "historia_1", "page_numbers": [1], "chunk_type": "narrative"}, "cleaned_content": "la historia de cuba es fascinante, con muchos eventos importantes."},
+    #        {"content": "matematicas avanzadas incluyen calculo diferencial e integral, y algebra lineal.", "metadata": {"chunk_id": "matematica_1", "page_numbers": [1], "chunk_type": "narrative"}, "cleaned_content": "matematicas avanzadas incluyen calculo diferencial e integral, y algebra lineal."},
+    #        {"content": "la revolucion cubana fue un periodo de grandes cambios sociales y politicos.", "metadata": {"chunk_id": "historia_2", "page_numbers": [2], "chunk_type": "narrative"}, "cleaned_content": "la revolucion cubana fue un periodo de grandes cambios sociales y politicos."}
+    #    ]
+    #    chunks_with_embeddings = generator.generate_embeddings_for_chunks(sample_chunks_for_test)
+    #    with open(chunks_with_embeddings_path, 'w', encoding='utf-8') as f:
+    #        json.dump(chunks_with_embeddings, f, indent=2, ensure_ascii=False)
+    #    print(f"Chunks de prueba con embeddings generados y guardados en: {chunks_with_embeddings_path}")
+    #else:
+    #    with open(chunks_with_embeddings_path, 'r', encoding='utf-8') as f:
+    #        chunks_with_embeddings = json.load(f)
+    #    print(f"Cargados {len(chunks_with_embeddings)} chunks con embeddings desde {chunks_with_embeddings_path}.")
+#
+#
+    #vector_store = ChromaVectorStore(path=chroma_db_path)
+#
+    ## Opcional: Si deseas Resetear la colección
+    #vector_store.reset_collection() 
+#
+    #vector_store.add_chunks(chunks_with_embeddings)
+    #print(f"Total de chunks en la DB: {vector_store.count_chunks()}")
+#
+    #query_text = "Solucion al ejercicio 1.1 de la 1ra convocatoria del examen de ingreso a la educacion superior 2017-2018"
+    #
+    #query_embedding_generator = EmbeddingGenerator() 
+    #query_embedding = query_embedding_generator.generate_embedding(query_text) 
+#
+    #print(f"\n--- Búsqueda de chunks similares a: '{query_text}' ---")
+    #similar_chunks = vector_store.search_similar_chunks(query_embedding, n_results=3)
+#
+    #if similar_chunks:
+    #    for i, chunk in enumerate(similar_chunks):
+    #        print(f"\nResultado {i+1} (Distancia: {chunk['distance']:.4f}):")
+    #        print(f"Chunk ID: {chunk['chunk_id']}")
+    #        print(f"Content: {chunk['content']}")
+    #        print(f"Metadata: {chunk['metadata']}")
+    #        print("-" * 30)
+    #else:
+    #    print("No se encontraron chunks similares.")
 
-    chunks_with_embeddings = []
-    if not os.path.exists(chunks_with_embeddings_path):
-        print(f"Error: {chunks_with_embeddings_path} no encontrado.")
-        print("Por favor, ejecuta 'src/embeddings/embedding_generator.py' primero para generar el archivo.")
-        # Generar datos de prueba si no hay un archivo existente
-        generator = EmbeddingGenerator()
-        sample_chunks_for_test = [
-            {"content": "la historia de cuba es fascinante, con muchos eventos importantes.", "metadata": {"chunk_id": "historia_1", "page_numbers": [1], "chunk_type": "narrative"}, "cleaned_content": "la historia de cuba es fascinante, con muchos eventos importantes."},
-            {"content": "matematicas avanzadas incluyen calculo diferencial e integral, y algebra lineal.", "metadata": {"chunk_id": "matematica_1", "page_numbers": [1], "chunk_type": "narrative"}, "cleaned_content": "matematicas avanzadas incluyen calculo diferencial e integral, y algebra lineal."},
-            {"content": "la revolucion cubana fue un periodo de grandes cambios sociales y politicos.", "metadata": {"chunk_id": "historia_2", "page_numbers": [2], "chunk_type": "narrative"}, "cleaned_content": "la revolucion cubana fue un periodo de grandes cambios sociales y politicos."}
-        ]
-        chunks_with_embeddings = generator.generate_embeddings_for_chunks(sample_chunks_for_test)
-        with open(chunks_with_embeddings_path, 'w', encoding='utf-8') as f:
-            json.dump(chunks_with_embeddings, f, indent=2, ensure_ascii=False)
-        print(f"Chunks de prueba con embeddings generados y guardados en: {chunks_with_embeddings_path}")
-    else:
-        with open(chunks_with_embeddings_path, 'r', encoding='utf-8') as f:
-            chunks_with_embeddings = json.load(f)
-        print(f"Cargados {len(chunks_with_embeddings)} chunks con embeddings desde {chunks_with_embeddings_path}.")
-
-
-    vector_store = ChromaVectorStore(path=chroma_db_path)
-
-    # Opcional: Si deseas Resetear la colección
-    # vector_store.reset_collection() 
-
-    vector_store.add_chunks(chunks_with_embeddings)
-    print(f"Total de chunks en la DB: {vector_store.count_chunks()}")
-
-    query_text = "eventos importantes de la historia de cuba"
-    
-    query_embedding_generator = EmbeddingGenerator() 
-    query_embedding = query_embedding_generator.generate_embedding(query_text) 
-
-    print(f"\n--- Búsqueda de chunks similares a: '{query_text}' ---")
-    similar_chunks = vector_store.search_similar_chunks(query_embedding, n_results=3)
-
-    if similar_chunks:
-        for i, chunk in enumerate(similar_chunks):
-            print(f"\nResultado {i+1} (Distancia: {chunk['distance']:.4f}):")
-            print(f"Chunk ID: {chunk['chunk_id']}")
-            print(f"Content: {chunk['content']}")
-            print(f"Metadata: {chunk['metadata']}")
-            print("-" * 30)
-    else:
-        print("No se encontraron chunks similares.")
-
-    query_text_math = "problemas de calculo y algebra"
-    query_embedding_math = query_embedding_generator.generate_embedding(query_text_math)
-
-    print(f"\n--- Búsqueda de chunks similares a: '{query_text_math}' ---")
-    similar_chunks_math = vector_store.search_similar_chunks(query_embedding_math, n_results=3)
-
-    if similar_chunks_math:
-        for i, chunk in enumerate(similar_chunks_math):
-            print(f"\nResultado {i+1} (Distancia: {chunk['distance']:.4f}):")
-            print(f"Chunk ID: {chunk['chunk_id']}")
-            print(f"Content: {chunk['content']}")
-            print(f"Metadata: {chunk['metadata']}")
-            print("-" * 30)
-    else:
-        print("No se encontraron chunks similares.")
+    #query_text_math = "problemas de calculo y algebra"
+    #query_embedding_math = query_embedding_generator.generate_embedding(query_text_math)
+#
+    #print(f"\n--- Búsqueda de chunks similares a: '{query_text_math}' ---")
+    #similar_chunks_math = vector_store.search_similar_chunks(query_embedding_math, n_results=3)
+#
+    #if similar_chunks_math:
+    #    for i, chunk in enumerate(similar_chunks_math):
+    #        print(f"\nResultado {i+1} (Distancia: {chunk['distance']:.4f}):")
+    #        print(f"Chunk ID: {chunk['chunk_id']}")
+    #        print(f"Content: {chunk['content']}")
+    #        print(f"Metadata: {chunk['metadata']}")
+    #        print("-" * 30)
+    #else:
+    #    print("No se encontraron chunks similares.")
