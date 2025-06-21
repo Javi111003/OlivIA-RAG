@@ -4,6 +4,7 @@ from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain_core.documents import Document
 import json
 import uuid 
+import spacy
 
 class DocumentLoader:
     """
@@ -16,10 +17,31 @@ class DocumentLoader:
         Inicializa el cargador de documentos.
         :param base_data_dir: Directorio base (ej., './data/raw') que contiene subcarpetas como 'exams' y 'books'.
         """
+        self.nlp = spacy.load("es_core_news_md")  # Cargar modelo de lenguaje en español
         self.base_data_dir = base_data_dir
         # Extensiones que UnstructuredFileLoader puede manejar y que deseas procesar
         self.supported_extensions = ['.pdf', '.docx', '.html', '.txt', '.md']
+        self.vocabulary = []
         
+    def _save_vocabulary(self, elements: List[Dict[str, Any]], lemmatize: bool):
+        """
+        Guarda el vocabulario en un archivo JSON.
+        :param vocabulary: Lista de términos del vocabulario.
+        :param output_path: Ruta donde se guardará el archivo JSON.
+        """
+        all_text = [item['content'] for item in elements]
+        doc = self.nlp(all_text)
+        vocabulary = []
+        if lemmatize:
+            vocabulary = list(set(token.lemma_.lower() for token in doc if token.is_alpha and not token.is_stop and not token.is_punct))
+        else : 
+            vocabulary = list(set(token.text.lower() for token in doc if token.is_alpha and not token.is_stop and not token.is_punct))
+        self.vocabulary = vocabulary
+        output_path = os.path.join(self.base_data_dir, 'vocabulary.json')
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(vocabulary, f, ensure_ascii=False, indent=4)
+        print(f"Vocabulario guardado en: {output_path}")
+                
     def _infer_document_type_from_path(self, filepath: str) -> str:
         """
         Infiere el tipo de documento ('exam', 'book', 'unknown') basado en la ruta del archivo.
@@ -120,6 +142,7 @@ class DocumentLoader:
                 if elements_from_file:
                     all_elements.extend(elements_from_file)
         print(f"Carga completa. Se encontraron y procesaron {len(all_elements)} elementos.")
+        self._save_vocabulary(self, all_elements, lemmatize=False)
         return all_elements
 
 # --- Código de prueba (para ejecutar este módulo directamente) ---

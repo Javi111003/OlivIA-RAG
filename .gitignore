@@ -51,3 +51,4 @@ Thumbs.db
 rag_cache/
 .data/raw/
 /chat_history/
+/.chroma_db/
