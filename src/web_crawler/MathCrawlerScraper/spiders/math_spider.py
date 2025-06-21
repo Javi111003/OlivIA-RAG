@@ -30,7 +30,7 @@ class MathSpider(CrawlSpider):
     def parse(self, response):
         sanitized_url_part = response.url.replace("https://", "").replace("http://", "").replace("/", "_").replace(".", "_").replace("?", "_").replace("=", "_").replace("&", "_")
         filename_base = sanitized_url_part[4:100]
-        filepath = self.output_dir / f"{filename_base}.txt"
+        filepath = self.output_dir / f"{filename_base}.html"
         try:
             filepath.write_bytes(response.body)
             self.log(f"Contenido HTML guardado en {filepath}")
