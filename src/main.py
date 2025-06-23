@@ -5,9 +5,12 @@ import streamlit as st
 from dotenv import load_dotenv
 import json
 import glob
+import asyncio
 from datetime import datetime
 from generator.llm_provider import MistralLLMProvider
 from types import GeneratorType
+from  agents.agentic_pipeline import AgenticPipeline
+from core.conversation_manager import ConversationManager as cm
 
 # Todo esto es la parte del Scrapy, la dejo arriba para que se vea 
 import threading
@@ -42,13 +45,21 @@ API_KEY = os.getenv("API_KEY")
 #MODEL_NAME = "mistral-small-latest"
 #API_URL = "https://api.mistral.ai/v1/chat/completions"
 HISTORY_DIR = "chat_history"
-
+# --- PAGE SETUP ---
+st.set_page_config(
+    page_title="OlivIA - Agentic Math Tutor",
+    page_icon="🤖",
+    layout="centered",
+    initial_sidebar_state="auto",
+)
 llm = None 
 try:
     llm = MistralLLMProvider()
+    pipeline = AgenticPipeline(llm)  # CREAR EL PIPELINE
+    st.success("✅ Sistema de agentes inicializado correctamente")
     
 except Exception as e:
-    st.error(f"Error initializing Mistral LLM Provider. {e}")
+    st.error(f"Error initializing system: {e}")
     st.stop()
 
 # --- HELPER FUNCTIONS ---
@@ -63,49 +74,44 @@ def setup():
         st.session_state.messages = [{"role": "system", "content": "Eres OlívIA, un tutor de matemáticas amigable y experto en preparación para exámenes de ingreso a la universidad. Siempre responde de manera clara, concisa y enfócate en la explicación de conceptos matemáticos."}]
     if "current_chat" not in st.session_state:
         st.session_state.current_chat = "new_chat"
+        
+async def process_with_agents(user_input: str) -> str:
+    """Procesa la consulta del usuario a través del pipeline de agentes"""
+    try:
+        # Ejecutar el pipeline completo
+        respuesta = await pipeline.run(user_input)
+        return respuesta
+    except Exception as e:
+        st.error(f"Error en el pipeline de agentes: {e}")
+        return f"Lo siento, ocurrió un error procesando tu consulta: {str(e)}"
+
+def run_agent_pipeline(user_input: str) -> str:
+    """Wrapper síncrono para ejecutar el pipeline async"""
+    try:
+        # Crear un nuevo loop de eventos si no existe
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Ejecutar el pipeline
+        return loop.run_until_complete(process_with_agents(user_input))
+    except Exception as e:
+        return f"Error ejecutando pipeline: {str(e)}"
 
 def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-def save_chat_history(messages, filename):
-    """Saves the chat history to a JSON file."""
-    filepath = os.path.join(HISTORY_DIR, sanitize_filename(filename))
-    with open(filepath, 'w') as f:
-        json.dump(messages, f, indent=4)
 
-def load_chat_history(filename):
-    """Loads a chat history from a JSON file."""
-    filepath = os.path.join(HISTORY_DIR, filename)
-    try:
-        with open(filepath, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return None
-
-def get_chat_history_files():
-    """Returns a sorted list of chat history files."""
-    files = glob.glob(os.path.join(HISTORY_DIR, "*.json"))
-    # Sort files by modification time, newest first
-    files.sort(key=os.path.getmtime, reverse=True)
-    return [os.path.basename(f) for f in files]
-
-
-# --- PAGE SETUP ---
-st.set_page_config(
-    page_title="OlivIA",
-    page_icon="✨",
-    layout="centered",
-    initial_sidebar_state="auto",
-)
-load_css(os.path.join(os.path.dirname(__file__), "style.css"))
-
+try:
+    load_css(os.path.join(os.path.dirname(__file__), "style.css"))
+except:
+    pass
 # Run setup
 setup()
 #start_math_crawler_background()
-def sanitize_filename(filename):
-    # Remove invalid characters for Windows filenames
-    return re.sub(r'[<>:"/\\|?*]', '', filename)
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -120,7 +126,7 @@ with st.sidebar:
     st.markdown("## 📜 Chat History")
 
     # Display saved chats
-    history_files = get_chat_history_files()
+    history_files = cm.get_chat_history_files()
     for file in history_files:
         col1, col2 = st.columns([3, 1])
         # Display chat name, remove .json
@@ -128,7 +134,7 @@ with st.sidebar:
         
         with col1:
             if st.button(chat_name_display, key=f"load_{file}", use_container_width=True):
-                st.session_state.messages = load_chat_history(file)
+                st.session_state.messages = cm.load_chat_history(file)
                 st.session_state.current_chat = file
                 st.rerun()
         with col2:
@@ -148,6 +154,20 @@ title = st.session_state.current_chat[:-5].replace("_", " ").title() if st.sessi
 st.title(f"🤖 {title}")
 st.caption("Powered by Mistral AI")
 
+# Mostrar información del sistema
+with st.expander("ℹ️ Información del Sistema"):
+    st.markdown("""
+    **OlivIA** utiliza un sistema de agentes especializados:
+    
+    1. 🔍 **Retriever**: Busca información relevante en la base de conocimientos
+    2. 👨‍💼 **Supervisor**: Coordina y decide qué agente usar
+    3. 🧮 **Experto Matemático**: Especializado en explicaciones matemáticas
+    4. 📋 **Creador de Exámenes**: Genera preguntas y exámenes personalizados
+    5. 📊 **Evaluador**: Verifica la calidad de las respuestas
+    
+    Tu consulta pasará por este pipeline completo para obtener la mejor respuesta posible.
+    """)
+
 # Display chat history
 for msg in st.session_state.messages[1:]:
     avatar = "👤" if msg["role"] == "user" else "🤖"
@@ -155,15 +175,16 @@ for msg in st.session_state.messages[1:]:
         st.markdown(msg["content"])
 
 # Handle user input
-if user_input := st.chat_input("What can I help you with today?"):
+if user_input := st.chat_input("¿Qué puedo ayudarte a entender hoy?"):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user", avatar="👤"):
         st.markdown(user_input)
 
     with st.chat_message("assistant", avatar="🤖"):
         with st.spinner("Thinking..."):
-            response_stream = llm.chat_completion(st.session_state.messages, stream=True)
-            full_response = st.write_stream(response_stream)
+            #response_stream = llm.chat_completion(st.session_state.messages, stream=True)
+            full_response = run_agent_pipeline(user_input)
+        st.markdown(full_response)
 
     if full_response:
         st.session_state.messages.append({"role": "assistant", "content": full_response})
@@ -174,5 +195,5 @@ if user_input := st.chat_input("What can I help you with today?"):
             filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{first_user_message}.json"
             st.session_state.current_chat = filename
         
-        save_chat_history(st.session_state.messages, st.session_state.current_chat)
+        cm.save_chat_history(st.session_state.messages, st.session_state.current_chat)
         st.rerun() # Rerun to update the history list
