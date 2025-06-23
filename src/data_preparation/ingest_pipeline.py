@@ -8,11 +8,11 @@ import sys
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
-from src.data_preparation.document_loader import DocumentLoader
-from src.data_preparation.text_cleaner import TextCleaner
-from src.data_preparation.chunker import SemanticChunker
-from src.embedding_models.embedding_generator import EmbeddingGenerator
-from src.vector_db.chroma_store import ChromaVectorStore
+from  data_preparation.document_loader import DocumentLoader
+from  data_preparation.text_cleaner import TextCleaner
+from  data_preparation.chunker import SemanticChunker
+from  embedding_models.embedding_generator import EmbeddingGenerator
+from  vector_db.chroma_store import ChromaVectorStore
 
 def run_ingestion_pipeline():
     """

@@ -490,7 +490,7 @@ class SemanticChunker:
 
 # Código de prueba
 if __name__ == "__main__":
-    from src.data_preparation.text_cleaner import TextCleaner
+    from  data_preparation.text_cleaner import TextCleaner
     import os
     import sys
     import json

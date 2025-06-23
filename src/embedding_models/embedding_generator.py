@@ -21,18 +21,19 @@ class EmbeddingGenerator:
             print(f"Error al cargar el modelo de embeddings '{model_name}': {e}")
             self.model = None
 
-    def generate_embedding(self, text: str) -> List[float]:
+    def generate_embedding(self, text: str) -> np.ndarray:
         """
         Genera el embedding para un solo texto.
         :param text: El texto limpio del chunk.
-        :return: Una lista de flotantes representando el embedding.
+        :return: Un array de numpy representando el embedding.
         """
         if not self.model:
             raise RuntimeError("El modelo de embeddings no se cargó correctamente.")
         
-        # Codificar el texto y convertir el array numpy a lista para JSON/DB
+        # Codificar el texto y devolver el array numpy
         embedding = self.model.encode(text, convert_to_tensor=False)
-        return embedding.tolist()
+        print(f"Embedding generado para el texto: '{text[:30]}...' (longitud: {len(embedding)})")
+        return embedding
 
     def generate_embeddings_for_chunks(self, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
