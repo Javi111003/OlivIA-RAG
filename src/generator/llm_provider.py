@@ -1,6 +1,9 @@
 import os
 from mistralai import Mistral
-from typing import List, Dict, Generator, Optional, Union
+from typing import List,  Generator, Optional, Union, Type
+from pydantic import BaseModel
+from langchain_core.output_parsers import JsonOutputParser 
+import json
 
 class MistralLLMProvider:
     """
@@ -22,6 +25,8 @@ class MistralLLMProvider:
         """
         self.api_key = api_key if api_key else os.getenv("MISTRAL_API_KEY")
         self.default_model = default_model
+        self._structured_output_schema: Optional[Type[BaseModel]] = None
+        self._parser: Optional[JsonOutputParser] = None
 
         if not self.api_key:
             raise ValueError(
@@ -31,9 +36,110 @@ class MistralLLMProvider:
 
         self.client = Mistral(api_key=self.api_key)
         print(f"MistralLLMProvider inicializado para modelo por defecto: {self.default_model}")
+        
+    def with_structured_output(self, schema: Type[BaseModel]) -> 'MistralLLMProvider':
+         """
+         Configura el LLM para devolver output estructurado según el schema Pydantic
+         
+         Args:
+             schema: Clase Pydantic que define la estructura esperada
+             
+         Returns:
+             MistralLLMProvider: Nueva instancia configurada para structured output
+         """
+         # Crear una nueva instancia para no mutar la original
+         new_provider = MistralLLMProvider(
+             api_key=self.api_key,
+             default_model=self.default_model
+         )
+         new_provider._structured_output_schema = schema
+         new_provider._parser = JsonOutputParser(pydantic_object=schema)
+         return new_provider
+     
+    async def ainvoke(self, messages: Union[List[dict[str, str]], str], **kwargs) -> Union[BaseModel, str]:
+        """
+        Invoca el modelo de forma asíncrona con soporte para structured output
+        
+        Args:
+            messages: Mensajes a enviar al modelo o string único
+            **kwargs: Argumentos adicionales para la llamada
+            
+        Returns:
+            BaseModel o str: Respuesta estructurada si se configuró schema, sino string
+        """
+        # Convertir string a formato de mensajes si es necesario
+        if isinstance(messages, str):
+            formatted_messages = [{"role": "user", "content": messages}]
+        else:
+            formatted_messages = messages
 
+        # Si hay schema configurado, agregar instrucciones de formato
+        if self._structured_output_schema and self._parser:
+            # Agregar instrucciones de formato al último mensaje
+            last_message = formatted_messages[-1]["content"]
+            format_instructions = self._parser.get_format_instructions()
+            
+            formatted_messages[-1]["content"] = f"{last_message}\n\n{format_instructions}"
+
+        try:
+            # Llamar al modelo (simulamos async con sync por ahora)
+            response = self.chat_completion(
+                messages=formatted_messages,
+                temperature=kwargs.get('temperature', 0.7),
+                max_tokens=kwargs.get('max_tokens', 1000),
+                stream=False
+            )
+
+            # Si hay schema configurado, parsear la respuesta
+            if self._structured_output_schema and self._parser:
+                try:
+                    # Intentar parsear como JSON estructurado
+                    parsed_dict = self._parser.parse(response)
+                    
+                    if isinstance(parsed_dict, dict):
+                        structured_response = self._structured_output_schema(**parsed_dict)
+                        return structured_response
+                    else:
+                        return parsed_dict
+                except Exception as parse_error:
+                    print(f"Error parsing structured output: {parse_error}")
+                    # Fallback: intentar extraer JSON de la respuesta
+                    return self._extract_json_fallback(response)
+            
+            return response
+
+        except Exception as e:
+            print(f"Error en ainvoke: {e}")
+            if self._structured_output_schema:
+                # Retornar una instancia por defecto del schema
+                return self._structured_output_schema()
+            return ""
+        
+    def _extract_json_fallback(self, response: str) -> Union[BaseModel, str]:
+        """
+        Intenta extraer JSON de una respuesta de texto libre como fallback
+        """
+        try:
+            # Buscar bloques JSON en la respuesta
+            import re
+            json_pattern = r'\{.*?\}'
+            matches = re.findall(json_pattern, response, re.DOTALL)
+            
+            for match in matches:
+                try:
+                    json_data = json.loads(match)
+                    return self._structured_output_schema(**json_data)
+                except:
+                    continue
+                    
+            return self._structured_output_schema()
+            
+        except Exception as e:
+            print(f"Error in JSON fallback extraction: {e}")
+            return self._structured_output_schema()
+    
     def chat_completion(self,
-                        messages: List[Dict[str, str]],
+                        messages: List[dict[str, str]],
                         model: Optional[str] = None,
                         temperature: float = 0.7,
                         max_tokens: int = 1000,
@@ -43,7 +149,7 @@ class MistralLLMProvider:
         Puede ser en streaming (Generator) o no (str).
 
         Args:
-            messages (List[Dict[str, str]]): Lista de mensajes de chat en formato diccionario.
+            messages (List[dict[str, str]]): Lista de mensajes de chat en formato diccionario.
                                              Ej: [{"role": "user", "content": "Hola!"}]
             model (Optional[str]): Nombre del modelo a usar para esta llamada. Si es None,
                                    usa el default_model de esta instancia.
@@ -100,3 +206,7 @@ class MistralLLMProvider:
                 return empty_gen()
             else:
                 return ""
+    
+    def generate(self, prompt: str, **kwargs) -> str:
+        """Método de compatibilidad para generar respuestas simples"""
+        return self.ainvoke([{"role": "user", "content": prompt}], **kwargs)
