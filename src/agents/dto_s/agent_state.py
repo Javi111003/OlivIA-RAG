@@ -7,6 +7,8 @@ class KnowledgeArea(BaseModel):
     """Área de conocimiento matemático con puntuación"""
     name: str = Field(description="Nombre del área de conocimiento")
     score: int = Field(ge=0, le=10, description="Puntuación de dominio (0-10)")
+    difficulty: int = Field(ge=0, le=10, description="Puntuación de dificultad (0-10)")
+    weight: int = Field(ge=0, le=10, description="Peso para el examen(0-10)")
     last_updated: datetime = Field(default_factory=datetime.now)
     confidence_level: Literal["baja", "media", "alta"] = Field(default="media")
     topics_mastered: List[str] = Field(default_factory=list, description="Temas específicos dominados")
@@ -25,6 +27,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Aritmética Básica",
             score=5,
+            difficulty=3,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -33,6 +37,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Álgebra Elemental",
             score=5,
+            difficulty=5,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -41,6 +47,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Ecuaciones Lineales",
             score=5,
+            difficulty=2,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -49,6 +57,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Sistemas de Ecuaciones",
             score=5,
+            difficulty=5,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -57,6 +67,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Ecuaciones Cuadráticas",
             score=5,
+            difficulty=7,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -67,6 +79,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Geometría Plana",
             score=5,
+            difficulty=9,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -75,6 +89,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Geometría Espacial",
             score=5,
+            difficulty=8,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -83,6 +99,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Geometría Analítica",
             score=5,
+            difficulty=9,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -93,6 +111,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Funciones Básicas",
             score=5,
+            difficulty=2,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -101,6 +121,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Funciones Cuadráticas",
             score=5,
+            difficulty=4,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -109,6 +131,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Funciones Exponenciales",
             score=5,
+            difficulty=4,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -117,6 +141,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Funciones Logarítmicas",
             score=5,
+            difficulty=5,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -127,6 +153,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Trigonometría Básica",
             score=5,
+            difficulty=6,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -135,6 +163,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Identidades Trigonométricas",
             score=5,
+            difficulty=5,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -145,6 +175,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Estadística Descriptiva",
             score=5,
+            difficulty=4,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -153,6 +185,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Probabilidad Básica",
             score=5,
+            difficulty=4,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -163,6 +197,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Límites y Continuidad",
             score=5,
+            difficulty=9,
+            weight=1,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -171,6 +207,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Derivadas Básicas",
             score=5,
+            difficulty=7,
+            weight=1,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -181,6 +219,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Teoría de Conjuntos",
             score=5,
+            difficulty=6,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )
@@ -189,6 +229,8 @@ class PreUniversityMathKnowledge(BaseModel):
         default_factory=lambda: KnowledgeArea(
             name="Lógica Matemática",
             score=5,
+            difficulty=8,
+            weight=5,
             topics_mastered=[],
             topics_struggling=[]
         )

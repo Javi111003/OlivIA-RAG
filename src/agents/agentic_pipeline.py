@@ -9,6 +9,7 @@ from  agents.specialised_agents.exam_creator_agent import ExamCreatorAgent
 from  agents.specialised_agents.evaluator_agent import EvaluatorAgent
 from  retriever.dense_retriever import DenseRetriever
 from  embedding_models.embedding_generator import EmbeddingGenerator
+from agents.specialised_agents.planning_agent import PlanningAgent
 logger = getLogger(__name__)
 
 class AgenticPipeline:
@@ -29,6 +30,8 @@ class AgenticPipeline:
         # self.student_simulator = crear_student_simulator(llm)
         self.evaluator = EvaluatorAgent(llm)
         self.evaluator_chain = self.evaluator.evaluator_chain
+        self.planning = PlanningAgent(llm)
+        self.planning_chain = self.plannig.plannig_chain
         
         self._build_graph()
     
@@ -41,6 +44,7 @@ class AgenticPipeline:
         workflow.add_node("supervisor", self.supervisor_chain)
         workflow.add_node("math_expert", self.math_expert_chain)
         workflow.add_node("exam_creator", self.exam_creator_chain)
+        workflow.add_node("planning", self.planning_chain)
         # workflow.add_node("student_simulator", self.student_simulator)
         workflow.add_node("evaluator", self.evaluator_chain)
         workflow.add_node("finalizer", self._finalizer_node)
@@ -57,12 +61,14 @@ class AgenticPipeline:
                 "exam_creator": "exam_creator",
                 #"student_simulator": "student_simulator",
                 "evaluator": "evaluator",
+                "planning" : "planning",
                 "FINISH": "finalizer"
             }
         )
         
         workflow.add_edge("math_expert", "supervisor")
         workflow.add_edge("exam_creator", "supervisor")
+        workflow.add_edge("planning", "supervisor")
         # workflow.add_edge("student_simulator", "supervisor")
         workflow.add_edge("evaluator", "supervisor")
         

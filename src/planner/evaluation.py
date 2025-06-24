@@ -1,10 +1,6 @@
 from entities import *
 
-
-def evaluate_plan(plan: StudyPlan,
-                  student: Student,
-                  official_topics: Dict[str, Topic]) -> float:
-    
+def evaluate_plan(plan: StudyPlan, student: Student, official_topics: Dict[str, Topic]) -> float:
     covered_topics = set()
     total_time = 0.0
     weakness_focus = 0.0

@@ -100,3 +100,8 @@ class KnowledgeAnalysisResponse(BaseModel):
     knowledge_updates: Dict[str, Dict] = Field(description="Actualizaciones de conocimiento por área")
     overall_assessment: str = Field(description="Evaluación general")
     recommendations: List[str] = Field(description="Recomendaciones específicas")
+
+class PlanningResponse(BaseModel):
+    """Respuesta del planificador de estudio"""
+    plan: Dict[str, float] = Field(description= "Plan de estudio")
+    score: float = Field(description= "score del plan")
