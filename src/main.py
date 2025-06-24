@@ -75,6 +75,138 @@ def setup():
     if "current_chat" not in st.session_state:
         st.session_state.current_chat = "new_chat"
         
+def setup_student_profile():
+    """Configuración inicial del perfil del estudiante"""
+    st.sidebar.header("📊 Perfil de Conocimiento")
+    
+    if st.sidebar.button("⚙️ Configurar Áreas de Conocimiento"):
+        st.session_state.show_knowledge_config = True
+    
+    if st.session_state.get("show_knowledge_config", False):
+        configure_knowledge_areas()
+
+def configure_knowledge_areas():
+    """Interfaz para configurar las áreas de conocimiento"""
+    st.subheader("🎯 Configuración de Áreas de Conocimiento Matemático")
+    
+    if "student_knowledge" not in st.session_state:
+        from agents.dto_s.agent_state import PreUniversityMathKnowledge
+        st.session_state.student_knowledge = PreUniversityMathKnowledge()
+    
+    knowledge = st.session_state.student_knowledge
+    
+    # Organizar por categorías
+    categories = {
+        "📐 Álgebra y Aritmética": [
+            "aritmetica_basica", "algebra_elemental", "ecuaciones_lineales", 
+            "sistemas_ecuaciones", "ecuaciones_cuadraticas"
+        ],
+        "📏 Geometría": [
+            "geometria_plana", "geometria_espacial", "geometria_analitica"
+        ],
+        "📈 Funciones": [
+            "funciones_basicas", "funciones_cuadraticas", 
+            "funciones_exponenciales", "funciones_logaritmicas"
+        ],
+        "📊 Trigonometría": [
+            "trigonometria_basica", "identidades_trigonometricas"
+        ],
+        "📉 Estadística y Probabilidad": [
+            "estadistica_descriptiva", "probabilidad_basica"
+        ],
+        "∫ Cálculo Preuniversitario": [
+            "limites_continuidad", "derivadas_basicas"
+        ],
+        "🔢 Conjuntos y Lógica": [
+            "teoria_conjuntos", "logica_matematica"
+        ]
+    }
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        for category, areas in categories.items():
+            st.write(f"### {category}")
+            for area_name in areas:
+                if hasattr(knowledge, area_name):
+                    area = getattr(knowledge, area_name)
+                    
+                    # Slider para puntuación
+                    new_score = st.slider(
+                        f"{area.name}",
+                        min_value=0,
+                        max_value=10,
+                        value=area.score,
+                        key=f"score_{area_name}",
+                        help=f"Puntuación actual: {area.score}/10"
+                    )
+                    
+                    # Actualizar si cambió
+                    if new_score != area.score:
+                        area.score = new_score
+                        area.last_updated = datetime.now()
+    
+    with col2:
+        st.write("### 📊 Resumen del Perfil")
+        
+        overall_score = knowledge.get_overall_score()
+        st.metric("Puntuación General", f"{overall_score:.1f}/10")
+        
+        # Mostrar áreas fuertes
+        strong_areas = knowledge.get_strong_areas()
+        if strong_areas:
+            st.write("**🟢 Áreas Fuertes:**")
+            for area in strong_areas:
+                st.write(f"- {area.name}: {area.score}/10")
+        
+        # Mostrar áreas débiles
+        weak_areas = knowledge.get_weak_areas()
+        if weak_areas:
+            st.write("**🔴 Áreas a Mejorar:**")
+            for area in weak_areas:
+                st.write(f"- {area.name}: {area.score}/10")
+        
+        # Gráfico de radar (opcional)
+        if st.button("📈 Ver Gráfico de Perfil"):
+            show_knowledge_radar_chart(knowledge)
+    
+    if st.button("💾 Guardar Configuración"):
+        st.success("✅ Perfil de conocimiento guardado")
+        st.session_state.show_knowledge_config = False
+
+def show_knowledge_radar_chart(knowledge):
+    """Muestra gráfico de radar del conocimiento"""
+    try:
+        import plotly.graph_objects as go
+        
+        areas = knowledge.get_all_areas()
+        names = [area.name for area in areas.values()]
+        scores = [area.score for area in areas.values()]
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatterpolar(
+            r=scores,
+            theta=names,
+            fill='toself',
+            name='Conocimiento Actual'
+        ))
+        
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 10]
+                )),
+            showlegend=True,
+            title="Perfil de Conocimiento Matemático"
+        )
+        
+        st.plotly_chart(fig)
+        
+    except ImportError:
+        st.warning("📊 Instala plotly para ver gráficos: `pip install plotly`")
+
 async def process_with_agents(user_input: str) -> str:
     """Procesa la consulta del usuario a través del pipeline de agentes"""
     try:
@@ -104,13 +236,13 @@ def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-
 try:
     load_css(os.path.join(os.path.dirname(__file__), "style.css"))
 except:
     pass
 # Run setup
 setup()
+setup_student_profile()
 #start_math_crawler_background()
 
 # --- SIDEBAR ---
