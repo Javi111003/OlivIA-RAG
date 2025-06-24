@@ -20,7 +20,6 @@ class Topic:
 class StudyBlock:
     topic: Topic
     time_allocated: float           # Hours allocated
-    target_difficulty: float        # Desired difficulty level
 
 @dataclass
 class StudyPlan:

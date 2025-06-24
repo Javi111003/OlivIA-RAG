@@ -45,6 +45,7 @@ class SupervisorAgent:
             AGENTES DISPONIBLES:
             - **math_expert**: Explicación matemática profunda y rigurosa
             - **exam_creator**: Crear exámenes, quizzes, evaluaciones y preguntas de práctica
+            - **planning**: Crear planes de estudio personalizados
             - **evaluator**: Evaluar comprensión y calidad de respuestas generadas
             - **FINISH**: La consulta está completamente resuelta y lista para entregar
             
@@ -66,6 +67,9 @@ class SupervisorAgent:
             - "explica", "qué es", "cómo resolver", "demuestra"
             - "teorema", "fórmula", "concepto", "definición"
             - "ayúdame a entender", "no entiendo"
+
+            PALABRAS CLAVE PARA PLANNING:
+            - "plan", "planica", "plan de estudio", "horario", "planificacion"
             
             Analiza la consulta inicial y decide el agente más apropiado.
             Considera las palabras clave y el contexto de la conversación.
@@ -79,7 +83,7 @@ class SupervisorAgent:
         logger.info(f"Router evaluando: tipo_ayuda={estado.tipo_ayuda_necesaria}, estado={estado.estado_actual}")
         
         # Validar que la decisión sea válida
-        opciones_validas = ["math_expert", "exam_creator","evaluator", "FINISH"]
+        opciones_validas = ["math_expert", "exam_creator","evaluator", "planning" "FINISH"]
         decision = estado.tipo_ayuda_necesaria or "math_expert"
         
         if decision not in opciones_validas:
