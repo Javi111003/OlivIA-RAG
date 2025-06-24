@@ -5,8 +5,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from  agents.dto_s.agent_formated_responses import MathExpertResponse
 from  agents.dto_s.agent_state import EstadoConversacion
 from  generator.llm_provider import MistralLLMProvider
+from agents.specialised_agents.knowledge_analyzer import KnowledgeAnalyzerAgent
 import asyncio
 import logging
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -19,45 +21,65 @@ class MathExpert():
         self.parser = JsonOutputParser(pydantic_object=MathExpertResponse)
 
         self.prompt = ChatPromptTemplate.from_template(
-            """
+             """
             Eres un experto en matemáticas con enfoque pedagógico personalizado.
             
             PERFIL DEL ESTUDIANTE:
-            - Nivel de comprensión: {nivel_comprension}
-            - Temas ya dominados: {temas_dominados}
-            - Áreas de dificultad conocidas: {areas_dificultad}
+            - Nivel de comprensión general: {nivel_comprension}
+            - Puntuación general: {knowledge_areas[overall_score]}/10
+            
+            ÁREAS DE FORTALEZA (Score ≥ 7):
+            {knowledge_areas[strong_areas]}
+            
+            ÁREAS DE DEBILIDAD (Score ≤ 4):
+            {knowledge_areas[weak_areas]}
+            
+            CAMPOS LEGACY (para compatibilidad):
+            - Temas dominados: {temas_dominados}
+            - Áreas de dificultad: {areas_dificultad}
             - Errores históricos: {historial_errores}
-            - Preferencias de aprendizaje: {preferencias}
+            - Preferencias: {preferencias}
             
             CONTEXTO DE LA CONSULTA:
             - Consulta original: {consulta_inicial}
+            - Contexto conversacional: {contexto_conversacional}
             - Contexto recuperado: {contexto_recuperado}
-            - Estado BDI actual: {bdi_context}
-            - Historial de conversación: {chat_history}
+            - Estado BDI: {bdi_context}
+            - Historial reciente: {chat_history}
             
-            INSTRUCCIONES PEDAGÓGICAS:
-            1. Adapta la explicación al nivel del estudiante
-            2. Conecta con conocimientos previos (temas dominados)
-            3. Anticipa confusiones basándote en errores históricos
-            4. Usa el estilo de aprendizaje preferido
-            5. Proporciona fórmulas relevantes y conceptos relacionados
-            6. Incluye verificaciones de comprensión si es apropiado
+            ANÁLISIS DE REFERENCIAS TEMPORALES:
+            Revisa cuidadosamente si la consulta incluye referencias como:
+            - "anteriormente", "antes", "previo", "mencionamos", "hablamos de"
+            - "el teorema que", "la fórmula que", "el concepto que"
+            - "continúa", "sigue", "siguiente", "más sobre"
+            
+            Si la consulta contiene referencias temporales:
+            1. PRIORIDAD MÁXIMA: Busca en el historial conversacional (chat_history)
+            2. Identifica qué teorema/concepto/ejercicio/examen se mencionó específicamente
+            3. NO uses el contexto RAG recuperado cuando exista una referencia temporal a algo pues el usuario no sabe del contexto recuperado
+            4. Si no encuentras la referencia en el historial, indica que no hay contexto previo
+            
+            INSTRUCCIONES PEDAGÓGICAS AVANZADAS:
+            1. **Personalización por áreas**: Adapta la explicación considerando las puntuaciones específicas por área
+            2. **Aprovecha fortalezas**: Conecta conceptos nuevos con áreas donde tiene buena puntuación
+            3. **Refuerza debilidades**: Si la consulta toca áreas débiles, proporciona apoyo extra
+            4. **Detecta progreso**: Identifica si la consulta muestra mejora en áreas previamente débiles
+            5. **Contextualización**: Usa el contexto conversacional para referencias específicas
             
             INSTRUCCIONES IMPORTANTES:
-            1. **PRIORIDAD**: Si la consulta hace referencia a algo mencionado en la conversación previa (como "ejercicio 1", "pregunta 1", "tu examen"), usa ÚNICAMENTE el contexto conversacional, NO el contexto recuperado.
-            
-            2. Si la consulta menciona "ejercicio", "pregunta", "problema" + número, busca específicamente esa referencia en el contexto conversacional.
-            
-            3. Si no encuentras la referencia específica en la conversación previa, entonces puedes usar el contexto recuperado.
-            
-            4. Siempre menciona de dónde viene la información que estás usando.
+            1. **PRIORIDAD**: Si la consulta referencia algo previo ("ejercicio 1", "tú examen","el teorema") o no aparece en la consulta el sujeto o cosa de la cual se habla, usa contexto conversacional únicamente.
+            Si no hay referencia previa, usa el contexto general de conocimiento matemático.
+            2. **AREAS ESPECÍFICAS**: Menciona qué área de conocimiento estás trabajando
+            3. **PROGRESO**: Si detectas mejora, reconócelo explícitamente
+            4. **CONEXIONES**: Conecta con áreas fuertes para facilitar comprensión
             
             EJEMPLOS DE RESPUESTA:
             - "Basándome en el examen que creé anteriormente..."
             - "Refiriéndome al ejercicio 1 del examen que generé..."
+            - "En relación al teorema que discutimos..."
+            - "Según el contexto de nuestra conversación previa..."
             - "Como no encuentro referencia previa específica, te ayudo con información general..."
-            
-            
+                        
             FORMATO DE RESPUESTA:
             - explanation: Explicación detallada y personalizada
             - formulas: Lista de fórmulas relevantes (LaTeX si aplica)
@@ -78,6 +100,7 @@ class MathExpert():
             student_context = estado.estado_estudiante.model_dump()
             bdi_context = estado.bdi_state.model_dump() if estado.bdi_state else {}
             
+            knowledge_context = self._extract_knowledge_context(estado.estado_estudiante.math_knowledge)
             contexto_conversacional = self._extraer_contexto_conversacional(estado)
 
             prompt_data = {
@@ -86,6 +109,7 @@ class MathExpert():
                 "areas_dificultad": student_context.get("areas_dificultad", []),
                 "historial_errores": student_context.get("historial_errores", []),
                 "preferencias": student_context.get("preferencias_aprendizaje", {}),
+                "knowledge_areas": knowledge_context,
                 "consulta_inicial": estado.consulta_inicial,
                 "contexto_conversacional": contexto_conversacional,
                 "contexto_recuperado": estado.contexto_recuperado,
@@ -126,11 +150,9 @@ class MathExpert():
             logger.info(f"🎯 Respuesta final normalizada: {type(respuesta)}")
             logger.info(f"📝 Explicación: {respuesta.explanation[:100]}...")
             
-            # Actualizar estado
             estado.respuesta_math_expert = respuesta.explanation
             estado.estado_actual = "math_expert_completado"
             
-            # Actualizar historial con metadatos ricos
             estado.chat_history.append({
                 "role": "math_expert",
                 "content": respuesta.explanation,
@@ -144,7 +166,10 @@ class MathExpert():
             })
             
             # Actualizar perfil del estudiante basado en la interacción
-            self.actualizar_perfil_estudiante(estado, respuesta)
+            #self.actualizar_perfil_estudiante(estado, respuesta)
+            
+            print("Actualizando perfil del estudiante...")
+            await self._analyze_and_update_knowledge(estado, respuesta)
             
             logger.info(f"Math expert completó respuesta (dificultad: {respuesta.difficulty_level})")
             return estado
@@ -214,18 +239,61 @@ class MathExpert():
                 difficulty_level='básico',
                 related_concepts=[]
             )
+            
     def _extraer_contexto_conversacional(self, estado: EstadoConversacion) -> str:
         """Extrae contexto relevante de la conversación previa"""
         contexto_partes = []
         
-        # Buscar respuestas previas de agentes
         for mensaje in estado.chat_history[-5:]:
             if mensaje.get("role") == "exam_creator":
                 contexto_partes.append(f"EXAMEN CREADO PREVIAMENTE:\n{mensaje['content']}\n")
             elif mensaje.get("role") == "math_expert":
                 contexto_partes.append(f"EXPLICACIÓN PREVIA:\n{mensaje['content'][:300]}...\n")
+            elif mensaje.get("role") == "user":
+                contexto_partes.append(f"CONSULTA DEL USUARIO:\n{mensaje['content'][:300]}...\n")
         
         if not contexto_partes:
             return "No hay contexto conversacional previo."
         
         return "\n".join(contexto_partes)
+    
+    def _extract_knowledge_context(self, math_knowledge) -> Dict:
+        """Extrae contexto relevante de las áreas de conocimiento"""
+        all_areas = math_knowledge.get_all_areas()
+        
+        # Áreas fuertes (score >= 7)
+        strong_areas = [
+            {"name": area.name, "score": area.score, "topics": area.topics_mastered}
+            for area in all_areas.values() if area.score >= 7
+        ]
+        
+        # Áreas débiles (score <= 4)
+        weak_areas = [
+            {"name": area.name, "score": area.score, "struggles": area.topics_struggling}
+            for area in all_areas.values() if area.score <= 4
+        ]
+        
+        # Puntuación general
+        overall_score = math_knowledge.get_overall_score()
+        
+        return {
+            "overall_score": round(overall_score, 1),
+            "strong_areas": strong_areas,
+            "weak_areas": weak_areas,
+            "relevant_areas": [area.name for area in all_areas.values()]
+        }
+    
+    async def _analyze_and_update_knowledge(self, estado: EstadoConversacion, respuesta: MathExpertResponse):
+        """Analiza la interacción y actualiza el conocimiento del estudiante"""
+        try:
+            # Crear analizador (lazy import para evitar ciclos)            
+            analyzer = KnowledgeAnalyzerAgent(self.llm)
+            
+            analysis = await analyzer.analyze_knowledge_from_interaction(estado)
+            print(f"🔍🔍🔍Análisis de conocimiento: {analysis}")
+            if analysis:
+                estado = analyzer.update_student_knowledge(estado, analysis)
+                logger.info("✅ Conocimiento del estudiante actualizado automáticamente")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Error en análisis automático de conocimiento: {e}")
