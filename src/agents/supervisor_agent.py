@@ -60,7 +60,7 @@ class SupervisorAgent:
             - "crea un examen", "genera un quiz", "haz preguntas"
             - "evaluación", "test", "práctica", "ejercicios"
             - "examen sobre", "quiz de", "preguntas de"
-            - "prueba", "assessment", "evaluación"
+            - "prueba", "assessment", "evaluación", "examen"
             
             PALABRAS CLAVE PARA MATH_EXPERT:
             - "explica", "qué es", "cómo resolver", "demuestra"

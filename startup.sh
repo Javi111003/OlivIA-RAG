@@ -1,0 +1,1 @@
+python.exe -m streamlit run src/main.py 
