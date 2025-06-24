@@ -39,6 +39,7 @@ class SupervisorAgent:
             ESTADO ACTUAL DEL PIPELINE:
             - Estado actual: {estado_actual}
             - Respuesta math_expert: {respuesta_math_expert}
+            - Respuesta exam_creator: {respuesta_exam_creator}
             - Necesita más información: {necesita_crawler}
             
             AGENTES DISPONIBLES:
@@ -48,9 +49,9 @@ class SupervisorAgent:
             - **FINISH**: La consulta está completamente resuelta y lista para entregar
             
             REGLAS DE DECISIÓN:
-            1. Si pide crear examen/quiz/evaluación → usar "exam_creator"
+            1. Si pide crear examen/quiz/evaluación/práctica → usar "exam_creator"
             2. Si NO hay respuesta del exam_creator ni tampoco del math_expert → usar "math_expert"
-            3. Si hay respuesta del math_expert pero no se ha evaluado → usar "evaluator"
+            3. Si hay respuesta del math_expert pero no se ha evaluado , siempre debe evaluarse → usar "evaluator"
             4. Si hay respuesta del exam_creator pero no se ha evaluado → usar "evaluator"
             5. Si hay respuesta evaluada y es de buena calidad → usar "FINISH"
             6. Si hay problemas de calidad → volver al agente correspondiente

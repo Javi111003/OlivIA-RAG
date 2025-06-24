@@ -1,3 +1,4 @@
+from datetime import datetime
 from logging import getLogger
 from langgraph.graph import StateGraph, END
 from  agents.dto_s.agent_state import EstadoConversacion
@@ -75,6 +76,16 @@ class AgenticPipeline:
         try:
             logger.info(f"🔍 RETRIEVER: Procesando consulta: {estado.consulta_inicial}")
             
+            if not any(msg.get("role") == "user" and msg.get("content") == estado.consulta_inicial 
+                for msg in estado.chat_history):
+                estado.chat_history.append({
+                    "role": "user",
+                    "content": estado.consulta_inicial,
+                    "metadata": {
+                        "timestamp": datetime.now().isoformat(),
+                        "is_initial_query": True
+                    }
+                })
             embedding_generator = EmbeddingGenerator()
             query_embedding = embedding_generator.generate_embedding(estado.consulta_inicial)
             logger.info(f"📊 RETRIEVER: Embedding generado, dimensión: {query_embedding.shape}")
