@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator, Field
-from typing import Literal, List
+from typing import Literal, List, Dict
 
 class SupervisorDecision(BaseModel):
     """Decisión estructurada del supervisor"""
@@ -48,8 +48,21 @@ class StudentSimulationResponse(BaseModel):
     student_answer: str = Field(description="Respuesta simulada del estudiante")
     confidence_level: Literal["baja", "media", "alta"] = Field(description="Nivel de confianza del estudiante")
     common_mistakes: List[str] = Field(default_factory=list, description="Errores comunes que podría cometer")
-    reasoning_process: str = Field(description="Process de razonamiento del estudiante")
+    reasoning_process: str = Field(description="Proceso de razonamiento del estudiante")
     areas_of_confusion: List[str] = Field(default_factory=list, description="Áreas donde el estudiante se confunde")
+    learning_metrics: Dict[str, int] = Field(default_factory=dict, description="Métricas de aprendizaje (0-100)")
+    cognitive_load: Literal["bajo", "medio", "alto"] = Field(description="Carga cognitiva del estudiante")
+    motivation_change: int = Field(ge=-10, le=10, description="Cambio en motivación (-10 a +10)")
+    predicted_performance: int = Field(ge=0, le=100, description="Rendimiento predicho (0-100)")
+    
+    @field_validator('learning_metrics')
+    @classmethod
+    def validate_metrics(cls, v: Dict[str, int]) -> Dict[str, int]:
+        """Valida que las métricas estén en rango 0-100"""
+        validated = {}
+        for key, value in v.items():
+            validated[key] = max(0, min(100, value))
+        return validated
 
 class ResponseEvaluation(BaseModel):
     """Evaluación estructurada de la respuesta"""
@@ -81,3 +94,9 @@ class CrawlerTriggerResponse(BaseModel):
             raise ValueError("Debe haber al menos una consulta de búsqueda")
         return [q.strip() for q in v if q.strip()]
     
+class KnowledgeAnalysisResponse(BaseModel):
+    """Respuesta del análisis de conocimiento"""
+    areas_analyzed: List[str] = Field(description="Áreas analizadas")
+    knowledge_updates: Dict[str, Dict] = Field(description="Actualizaciones de conocimiento por área")
+    overall_assessment: str = Field(description="Evaluación general")
+    recommendations: List[str] = Field(description="Recomendaciones específicas")
