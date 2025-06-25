@@ -31,7 +31,7 @@ class AgenticPipeline:
         self.evaluator = EvaluatorAgent(llm)
         self.evaluator_chain = self.evaluator.evaluator_chain
         self.planning = PlanningAgent(llm)
-        self.planning_chain = self.plannig.plannig_chain
+        self.planning_chain = self.planning.plannig_chain
         
         self._build_graph()
     
@@ -135,6 +135,9 @@ class AgenticPipeline:
         elif estado.respuesta_exam_creator:
             estado.respuesta_final = estado.respuesta_exam_creator
             logger.info("✅ Finalizando con respuesta de exam_creator")
+        elif estado.respuesta_planning:
+            estado.respuesta_final = estado.respuesta_planning
+            logger.info("✅ Finalizando con respuesta de planning")
         else:
             estado.respuesta_final = "No se pudo generar una respuesta adecuada."
             logger.info("⚠️ Finalizando sin respuesta específica")

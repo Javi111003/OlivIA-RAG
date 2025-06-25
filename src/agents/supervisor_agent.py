@@ -40,22 +40,25 @@ class SupervisorAgent:
             - Estado actual: {estado_actual}
             - Respuesta math_expert: {respuesta_math_expert}
             - Respuesta exam_creator: {respuesta_exam_creator}
+            - Respuesta planning : {respuesta_planning}
             - Necesita más información: {necesita_crawler}
             
             AGENTES DISPONIBLES:
             - **math_expert**: Explicación matemática profunda y rigurosa
             - **exam_creator**: Crear exámenes, quizzes, evaluaciones y preguntas de práctica
-            - **planning**: Crear planes de estudio personalizados
+            - **planning**: Crear planes de estudio personalizados basàndote en el estado del estudiante
             - **evaluator**: Evaluar comprensión y calidad de respuestas generadas
             - **FINISH**: La consulta está completamente resuelta y lista para entregar
             
             REGLAS DE DECISIÓN:
             1. Si pide crear examen/quiz/evaluación/práctica → usar "exam_creator"
-            2. Si NO hay respuesta del exam_creator ni tampoco del math_expert → usar "math_expert"
-            3. Si hay respuesta del math_expert pero no se ha evaluado , siempre debe evaluarse → usar "evaluator"
-            4. Si hay respuesta del exam_creator pero no se ha evaluado → usar "evaluator"
-            5. Si hay respuesta evaluada y es de buena calidad → usar "FINISH"
-            6. Si hay problemas de calidad → volver al agente correspondiente
+            2. Si pide crear plan/planificación de estudio → usar "planning"
+            3. Si NO hay respuesta del exam_creator  , ni del planning , ni tampoco del math_expert → usar "math_expert"
+            4. Si hay respuesta del math_expert pero no se ha evaluado , siempre debe evaluarse → usar "evaluator"
+            5. Si hay respuesta del exam_creator pero no se ha evaluado → usar "evaluator"
+            6. Si hay respuesta del planning pero no se ha evaluado → usar "evaluator"
+            7. Si hay respuesta evaluada y es de buena calidad → usar "FINISH"
+            8. Si hay problemas de calidad → volver al agente correspondiente
             
             PALABRAS CLAVE PARA EXAM_CREATOR:
             - "crea un examen", "genera un quiz", "haz preguntas"
@@ -69,7 +72,7 @@ class SupervisorAgent:
             - "ayúdame a entender", "no entiendo"
 
             PALABRAS CLAVE PARA PLANNING:
-            - "plan", "planica", "plan de estudio", "horario", "planificacion"
+            - "plan", "planifica", "plan de estudio", "horario", "planificacion", "cómo estudio"
             
             Analiza la consulta inicial y decide el agente más apropiado.
             Considera las palabras clave y el contexto de la conversación.
@@ -80,23 +83,23 @@ class SupervisorAgent:
     
     def supervisor_router(self, estado: EstadoConversacion) -> str:
         """Router que determina el próximo agente basado en la decisión del supervisor"""
-        logger.info(f"Router evaluando: tipo_ayuda={estado.tipo_ayuda_necesaria}, estado={estado.estado_actual}")
+        print(f"Router evaluando: tipo_ayuda={estado.tipo_ayuda_necesaria}, estado={estado.estado_actual}")
         
         # Validar que la decisión sea válida
-        opciones_validas = ["math_expert", "exam_creator","evaluator", "planning" "FINISH"]
+        opciones_validas = ["math_expert", "exam_creator","evaluator", "planning", "FINISH"]
         decision = estado.tipo_ayuda_necesaria or "math_expert"
         
         if decision not in opciones_validas:
             logger.warning(f"Decisión inválida '{decision}', usando 'math_expert' por defecto")
             decision = "math_expert"
         
-        logger.info(f"Router decide: {decision}")
+        print(f"T-T!!!!!!!!!!! Router decide: {decision}\n")
         return decision
 
     async def supervisor_chain(self, estado: EstadoConversacion) -> EstadoConversacion:
         """Cadena principal del supervisor con manejo robusto de errores"""
         try:
-            logger.info(f"Supervisor evaluando estado: {estado.estado_actual}")
+            print(f"Supervisor evaluando estado: {estado.estado_actual}")
             
             bdi_context = self.extraer_contexto_bdi(estado)
             student_context = estado.estado_estudiante.model_dump()
@@ -116,6 +119,7 @@ class SupervisorAgent:
                 "estado_actual": estado.estado_actual,
                 "respuesta_math_expert": estado.respuesta_math_expert or "No disponible",
                 "respuesta_exam_creator": estado.respuesta_exam_creator or "No disponible",
+                "respuesta_planning": estado.respuesta_planning or "No disponible",
                 "necesita_crawler": estado.necesita_crawler,
                 "format_instructions": self.parser.get_format_instructions()
             }
@@ -154,7 +158,7 @@ class SupervisorAgent:
                     # Fallback inteligente basado en el estado actual
                     respuesta = self._crear_decision_fallback(estado)
             
-            opciones_validas = ["math_expert", "exam_creator", "evaluator", "FINISH"]
+            opciones_validas = ["math_expert", "exam_creator", "evaluator", "planning","FINISH"]
             if respuesta.next_agent not in opciones_validas:
                 logger.warning(f"Agente inválido '{respuesta.next_agent}', usando fallback")
                 respuesta = self._crear_decision_fallback(estado)
@@ -164,8 +168,8 @@ class SupervisorAgent:
             
             self.actualizar_bdi_state(estado, respuesta)
             
-            logger.info(f"Supervisor decidió: {respuesta.next_agent} (confianza: {respuesta.confidence})")
-            logger.info(f"Razonamiento: {respuesta.reasoning}")
+            print(f"Supervisor decidió: {respuesta.next_agent} (confianza: {respuesta.confidence})")
+            print(f"Razonamiento: {respuesta.reasoning}")
             return estado
             
         except Exception as e:
@@ -178,9 +182,9 @@ class SupervisorAgent:
     
     def _crear_decision_fallback(self, estado: EstadoConversacion) -> SupervisorDecision:
         """Crea una decisión de fallback basada en el estado actual"""
-        logger.info(f"🔍 Evaluando fallback - Estado: {estado.estado_actual}")
-        logger.info(f"🔍 Respuesta math_expert: {bool(estado.respuesta_math_expert)}")
-        logger.info(f"🔍 Respuesta exam_creator: {bool(estado.respuesta_exam_creator)}")
+        print(f"🔍 Evaluando fallback - Estado: {estado.estado_actual}")
+        print(f"🔍 Respuesta math_expert: {bool(estado.respuesta_math_expert)}")
+        print(f"🔍 Respuesta exam_creator: {bool(estado.respuesta_exam_creator)}")
         
         consulta_lower = estado.consulta_inicial.lower()
         
@@ -192,10 +196,19 @@ class SupervisorAgent:
         palabras_matematicas = ["explica", "qué es", "cómo", "teorema", "fórmula", 
                             "concepto", "definición", "resolver", "demuestra", "solucion", "solución"]
         
+        palabras_planificacion = ["plan", "cómo estudio", "planifica", "planificar", "plan de estudio", "horario"]
+        
         if any(palabra in consulta_lower for palabra in palabras_examen) and not estado.respuesta_exam_creator:
             return SupervisorDecision(
                 next_agent="exam_creator",
                 reasoning="La consulta solicita crear un examen o evaluación",
+                confidence=0.9
+            )
+        
+        if any(palabra in consulta_lower for palabra in palabras_planificacion) and not estado.respuesta_planning:
+            return SupervisorDecision(
+                next_agent="exam_creator",
+                reasoning="La consulta solicita crear un plan de estudio",
                 confidence=0.9
             )
         
@@ -214,6 +227,14 @@ class SupervisorAgent:
                 confidence=0.8
             )
         
+        if (estado.respuesta_planning and 
+            estado.estado_actual not in ["evaluator_completado", "planning_evaluado"]):
+            return SupervisorDecision(
+                next_agent="evaluator",
+                reasoning="Hay respuesta del planning, necesita evaluación única",
+                confidence=0.8
+            )
+        
         if (estado.respuesta_math_expert and 
             estado.estado_actual not in ["evaluator_completado", "math_expert_evaluado"]):
             return SupervisorDecision(
@@ -222,7 +243,7 @@ class SupervisorAgent:
                 confidence=0.8
             )
         
-        if estado.estado_actual in ["evaluator_completado", "math_expert_evaluado", "exam_creator_evaluado"]:
+        if estado.estado_actual in ["evaluator_completado", "math_expert_evaluado", "exam_creator_evaluado", "planning_evaluado"]:
             return SupervisorDecision(
                 next_agent="FINISH",
                 reasoning="Ya se evaluó la respuesta, proceso completado",
@@ -294,8 +315,12 @@ def decidir_fallback(self, consulta: str) -> str:
     
     if any(word in consulta_lower for word in ["examen", "quiz", "test", "evaluación", "preguntas", "crea", "genera", "haz un"]):
         return "exam_creator"
+    elif any(word in consulta_lower for word in ["plan", "cómo estudio", "planifica", "planificar", "plan de estudio", "horario"]):
+        return "planning"
     elif any(word in consulta_lower for word in ["teorema", "demostración", "concepto", "definición", "explica", "qué es"]):
         return "math_expert"
+    elif any(word in consulta_lower for word in ["plan", "còmo estudio", "planifica", "planificar", "plan de estudio", "horario"]):
+        return "planning"
     elif any(word in consulta_lower for word in ["evaluar", "revisar", "calidad"]):
         return "evaluator"
     else:
