@@ -20,6 +20,7 @@ class Topic:
 class StudyBlock:
     topic: Topic
     time_allocated: float           # Hours allocated
+    target_difficulty: float
 
 @dataclass
 class StudyPlan:

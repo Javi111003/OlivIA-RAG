@@ -3,14 +3,14 @@ from typing import Literal, List, Dict
 
 class SupervisorDecision(BaseModel):
     """Decisión estructurada del supervisor"""
-    next_agent: Literal["math_expert", "exam_creator", "student_simulator", "evaluator", "FINISH"]
+    next_agent: Literal["math_expert", "exam_creator", "planning", "student_simulator", "evaluator", "FINISH"]
     reasoning: str = Field(description="Razonamiento detrás de la decisión")
     confidence: float = Field(ge=0.0, le=1.0, description="Confianza en la decisión (0-1)")
     
     @field_validator('next_agent')
     @classmethod
     def validate_agent(cls, v: str) -> str:
-        valid_agents = ["math_expert", "exam_creator", "student_simulator", "evaluator", "FINISH"]
+        valid_agents = ["math_expert", "exam_creator", "planning","student_simulator", "evaluator", "FINISH"]
         if v not in valid_agents:
             raise ValueError(f"Agente debe ser uno de: {valid_agents}")
         return v
@@ -101,7 +101,17 @@ class KnowledgeAnalysisResponse(BaseModel):
     overall_assessment: str = Field(description="Evaluación general")
     recommendations: List[str] = Field(description="Recomendaciones específicas")
 
+#class PlanningResponse(BaseModel):
+#    """Respuesta del planificador de estudio"""
+#    plan: Dict[str, Dict[str, float]] = Field(description= "Plan de estudio")
+#    score: float = Field(description= "score del plan")
+
+class PlanBlock(BaseModel):
+    topic: str = Field(description="Nombre del tema")
+    topic_description: str = Field(description="Descripción explicativa del tema")
+    time_allocated: float = Field(description="Tiempo dedicado en horas")
+
 class PlanningResponse(BaseModel):
     """Respuesta del planificador de estudio"""
-    plan: Dict[str, float] = Field(description= "Plan de estudio")
-    score: float = Field(description= "score del plan")
+    plan: List[PlanBlock] = Field(description="Plan de estudio")
+    score: float = Field(description="score del plan")

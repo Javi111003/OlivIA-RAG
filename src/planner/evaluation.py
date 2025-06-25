@@ -1,4 +1,4 @@
-from entities import *
+from planner.entities import *
 
 def evaluate_plan(plan: StudyPlan, student: Student, official_topics: Dict[str, Topic]) -> float:
     covered_topics = set()
@@ -18,7 +18,7 @@ def evaluate_plan(plan: StudyPlan, student: Student, official_topics: Dict[str, 
         total_time += block.time_allocated
 
         current_mastery = student.topic_mastery.get(topic_name, 0.0)
-        weakness_focus += block.time_allocated * (1 - current_mastery)
+        weakness_focus += block.time_allocated * (1 - current_mastery * 0.1)
 
         if previous_difficulty is not None:
             difficulty_penalty += abs(block.target_difficulty - previous_difficulty)

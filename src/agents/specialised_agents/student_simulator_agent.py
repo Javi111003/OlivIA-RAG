@@ -629,7 +629,7 @@ class StudentSimulatorAgent:
             # Objetivos de optimización
             opt_targets = exp_results.get("optimization_targets", {})
             if opt_targets:
-                output += f"\n**Objetivos para Optimización con Metaheurísticas:**\n"
+                output += f"\n**Objetivos para Optimización:**\n"
                 for variation, targets in opt_targets.items():
                     output += f"- {variation.title()}: Mejorar {', '.join(targets['optimization_priority'])}\n"
         

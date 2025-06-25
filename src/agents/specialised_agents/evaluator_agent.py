@@ -40,6 +40,7 @@ class EvaluatorAgent:
             
             INSTRUCCIONES:
             - Evalúa cada criterio objetivamente
+            - Si la respuesta es un plan de estudio del planning ,entonces no propongas mejoras , salta los pasos subsiguientes a esta instrucción
             - Identifica si la respuesta es suficiente o necesita mejoras
             - Determina si se necesita más contexto o información
             - Proporciona recomendaciones específicas para mejorar
@@ -51,7 +52,7 @@ class EvaluatorAgent:
     async def evaluator_chain(self, estado: EstadoConversacion) -> EstadoConversacion:
         """Cadena principal del evaluador que analiza la calidad de las respuestas"""
         try:
-            logger.info(f"Evaluador analizando estado: {estado.estado_actual}")
+            print(f"Evaluador analizando estado: {estado.estado_actual}")
             
             # Obtener la respuesta a evaluar
             respuesta_a_evaluar ,tipo_respuesta = self._obtener_respuesta_para_evaluar(estado)
@@ -119,16 +120,16 @@ class EvaluatorAgent:
             self._actualizar_estado_con_evaluacion(estado, evaluacion)
             if tipo_respuesta == "exam_creator":
                 estado.estado_actual = "exam_creator_evaluado"
-                logger.info("✅ Exam creator evaluado - marcando estado")
+                print("✅ Exam creator evaluado - marcando estado")
             elif tipo_respuesta == "math_expert":
                 estado.estado_actual = "math_expert_evaluado" 
-                logger.info("✅ Math expert evaluado - marcando estado")
+                print("✅ Math expert evaluado - marcando estado")
             else:
                 estado.estado_actual = "evaluator_completado"
-                logger.info("✅ Evaluación general completada")
+                print("✅ Evaluación general completada")
             
-            logger.info(f"🎯 Evaluación final: {evaluacion.overall_quality} (suficiente: {evaluacion.is_sufficient})")
-            logger.info(f"🏁 Estado actualizado a: {estado.estado_actual}")
+            print(f"🎯 Evaluación final: {evaluacion.overall_quality} (suficiente: {evaluacion.is_sufficient})")
+            print(f"🏁 Estado actualizado a: {estado.estado_actual}")
             
             return estado
             
@@ -146,22 +147,27 @@ class EvaluatorAgent:
             Si no hay respuesta disponible, retorna (None, "")
         """
         if estado.respuesta_exam_creator and estado.estado_actual.startswith("exam_creator"):
-            logger.info("📋 Evaluando respuesta del exam_creator")
+            print("📋 Evaluando respuesta del exam_creator")
             return estado.respuesta_exam_creator, "exam_creator"
+        
+        elif estado.respuesta_planning :
+            print("📋 Evaluando respuesta del planning")
+            print(f"Respuesta del planificador : {estado.respuesta_planning}")
+            return estado.respuesta_planning, "planning"
             
         elif estado.respuesta_math_expert and estado.estado_actual.startswith("math_expert"):
-            logger.info("🧮 Evaluando respuesta del math_expert")
+            print("🧮 Evaluando respuesta del math_expert")
             return estado.respuesta_math_expert, "math_expert"
         
         # FALLBACK: Evaluar cualquiera que esté disponible (solo si no se ha evaluado)
         elif (estado.respuesta_math_expert and 
             estado.estado_actual not in ["math_expert_evaluado", "evaluator_completado"]):
-            logger.info("🔄 Fallback: evaluando math_expert")
+            print("🔄 Fallback: evaluando math_expert")
             return estado.respuesta_math_expert, "math_expert"
             
         elif (estado.respuesta_exam_creator and 
             estado.estado_actual not in ["exam_creator_evaluado", "evaluator_completado"]):
-            logger.info("🔄 Fallback: evaluando exam_creator")
+            print("🔄 Fallback: evaluando exam_creator")
             return estado.respuesta_exam_creator, "exam_creator"
         
         # No hay respuesta disponible para evaluar
@@ -198,4 +204,4 @@ class EvaluatorAgent:
         
         if evaluacion.needs_more_context:
             estado.necesita_crawler = True
-            logger.info("Evaluador recomienda usar crawler para más contexto")
+            print("Evaluador recomienda usar crawler para más contexto")

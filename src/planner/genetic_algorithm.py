@@ -1,4 +1,4 @@
-from entities import *
+from planner.entities import *
 import random
 
 def generate_random_plan(official_topics: Dict[str, Topic],
@@ -65,7 +65,7 @@ def generate_population(pop_size: int,
     return population
 
 def structured_tournament_selection(population: List[StudyPlan],
-                                    fitness_fn) -> List[StudyPlan]:
+                                    fitness_fn, student, topics) -> List[StudyPlan]:
     """
     Empareja aleatoriamente a los individuos de la población de dos en dos
     y selecciona el mejor de cada par.
@@ -79,14 +79,16 @@ def structured_tournament_selection(population: List[StudyPlan],
     
     winners = []
 
-    if len(population) % 2 != 0:
-        winners.append(population.pop())
+    # If odd, pop one from shuffled to add as winner (bypassing tournament)
+    if len(shuffled) % 2 != 0:
+        winners.append(shuffled.pop())
 
     for i in range(0, len(shuffled), 2):
-        plan1 = shuffled[i]
-        plan2 = shuffled[i + 1]
-        winner = max([plan1, plan2], key=fitness_fn)
-        winners.append(winner)
+        if i + 1 < len(shuffled):
+            plan1 = shuffled[i]
+            plan2 = shuffled[i + 1]
+            winner = max([plan1, plan2], key=lambda sp : fitness_fn(sp, student, topics))
+            winners.append(winner)
     
     return winners
 
@@ -158,6 +160,8 @@ def mutate(plan: StudyPlan,
 
 def evolve_population(population: List[StudyPlan],
                       fitness_fn,
+                      topics,
+                      student,
                       num_generations: int = 50,
                       mutation_rate: float = 0.3,
                       elitism: bool = True) :
@@ -168,11 +172,11 @@ def evolve_population(population: List[StudyPlan],
         - La última población generada
         - El mejor plan encontrado durante la evolución
     """
-    best_plan = max(population, key=fitness_fn)
+    best_plan = max(population, key=lambda sp : fitness_fn(sp, student, topics))
 
     for generation in range(num_generations):
         # 1. Selección por torneo estructurado
-        selected = structured_tournament_selection(population, fitness_fn)
+        selected = structured_tournament_selection(population, fitness_fn, student, topics)
 
         # 2. Cruce entre pares
         offspring = []
@@ -184,14 +188,22 @@ def evolve_population(population: List[StudyPlan],
         # 3. Mutación
         mutated_offspring = [mutate(child, mutation_rate=mutation_rate) for child in offspring]
 
+        # --- Fallback if no offspring were produced ---
+        if not mutated_offspring:
+            # Option 1: mutate selected directly
+            mutated_offspring = [mutate(plan, mutation_rate=mutation_rate) for plan in selected]
+            # Option 2: fallback to previous population if still empty
+            if not mutated_offspring:
+                mutated_offspring = population[:]
+                
         # 4. Evaluación del mejor
         if elitism:
-            best_offspring = max(mutated_offspring, key=fitness_fn)
-            if fitness_fn(best_offspring) > fitness_fn(best_plan):
+            best_offspring = max(mutated_offspring, key=lambda sp : fitness_fn(sp, student, topics))
+            if fitness_fn(best_offspring, student, topics) > fitness_fn(best_plan, student, topics):
                 best_plan = best_offspring
 
             # Reemplazar al peor de la nueva población con el mejor actual
-            worst_idx = min(range(len(mutated_offspring)), key=lambda i: fitness_fn(mutated_offspring[i]))
+            worst_idx = min(range(len(mutated_offspring)), key=lambda i: fitness_fn(mutated_offspring[i], student, topics))
             mutated_offspring[worst_idx] = best_plan
 
         # 5. Avanzar a la siguiente generación

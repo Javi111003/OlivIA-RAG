@@ -68,7 +68,7 @@ class ExamCreatorAgent:
     def extract_exam_from_response(self, response_text: str) -> dict:
         """Extrae JSON del examen de la respuesta del LLM"""
         try:
-            logger.info(f"🔧 Extrayendo examen de respuesta...")
+            print(f"🔧 Extrayendo examen de respuesta...")
             
             if isinstance(response_text, dict):
                 return response_text
@@ -91,7 +91,7 @@ class ExamCreatorAgent:
                 try:
                     import json
                     parsed_json = json.loads(json_str)
-                    logger.info(f"✅ Examen extraído exitosamente")
+                    print(f"✅ Examen extraído exitosamente")
                     return parsed_json
                 except json.JSONDecodeError as e:
                     logger.error(f"❌ Error parseando JSON del examen: {e}")
@@ -163,11 +163,11 @@ class ExamCreatorAgent:
         try:
             # Si ya es ExamCreatorResponse
             if isinstance(respuesta, ExamCreatorResponse):
-                logger.info("✅ Respuesta ya es ExamCreatorResponse")
+                print("✅ Respuesta ya es ExamCreatorResponse")
                 return respuesta
             
             if isinstance(respuesta, dict) and 'exam_title' in respuesta:
-                logger.info("🔄 Convirtiendo dict a ExamCreatorResponse")
+                print("🔄 Convirtiendo dict a ExamCreatorResponse")
                 return ExamCreatorResponse(
                     exam_title=respuesta.get('exam_title', f'Examen sobre {consulta}'),
                     questions=respuesta.get('questions', []),
@@ -177,7 +177,7 @@ class ExamCreatorAgent:
                 )
             
             if isinstance(respuesta, str):
-                logger.info(f"🔧 Intentando parsear string de examen...")
+                print(f"🔧 Intentando parsear string de examen...")
                 json_data = self.extract_exam_from_response(respuesta)
                 if json_data and 'exam_title' in json_data:
                     return ExamCreatorResponse(
@@ -198,7 +198,7 @@ class ExamCreatorAgent:
     
     async def exam_creator_chain(self, estado: EstadoConversacion) -> EstadoConversacion:
         """Cadena principal del creador de exámenes"""
-        logger.info(f"ExamCreator procesando: {estado.consulta_inicial}")
+        print(f"ExamCreator procesando: {estado.consulta_inicial}")
         
         try:
             student_context = estado.estado_estudiante.model_dump()
@@ -217,18 +217,18 @@ class ExamCreatorAgent:
             
             # Intentar structured output primero
             try:
-                logger.info("🔧 ExamCreator: Intentando structured output...")
+                print("🔧 ExamCreator: Intentando structured output...")
                 respuesta_raw = await self.llm_structured.ainvoke(formatted_prompt)
-                logger.info(f"✅ Structured output exitoso: {type(respuesta_raw)}")
+                print(f"✅ Structured output exitoso: {type(respuesta_raw)}")
                 
             except Exception as structured_error:
                 logger.warning(f"⚠️ Structured output falló: {structured_error}")
                 
                 # Fallback a raw response
                 try:
-                    logger.info("🔄 Intentando raw response...")
+                    print("🔄 Intentando raw response...")
                     respuesta_raw = await self.llm.ainvoke(formatted_prompt)
-                    logger.info(f"📝 Raw response obtenida: {type(respuesta_raw)}")
+                    print(f"📝 Raw response obtenida: {type(respuesta_raw)}")
                 except Exception as raw_error:
                     logger.error(f"❌ Raw response también falló: {raw_error}")
                     respuesta_raw = {}
@@ -259,7 +259,7 @@ class ExamCreatorAgent:
                 }
             })
             
-            logger.info(f"✅ ExamCreator completado: {examen.exam_title} ({len(examen.questions)} preguntas)")
+            print(f"✅ ExamCreator completado: {examen.exam_title} ({len(examen.questions)} preguntas)")
             return estado
             
         except Exception as e:
@@ -280,7 +280,7 @@ class ExamCreatorAgent:
                     "difficulty": "básico",
                     "estimated_time": 45,
                     "topics": [estado.consulta_inicial],
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now().isoformat(), 
                     "error_recovery": True
                 }
             })

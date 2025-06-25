@@ -7,8 +7,8 @@ class KnowledgeArea(BaseModel):
     """Área de conocimiento matemático con puntuación"""
     name: str = Field(description="Nombre del área de conocimiento")
     score: int = Field(ge=0, le=10, description="Puntuación de dominio (0-10)")
-    difficulty: int = Field(ge=0, le=10, description="Puntuación de dificultad (0-10)")
-    weight: int = Field(ge=0, le=10, description="Peso para el examen(0-10)")
+    difficulty: int = Field(ge=0, le=10, description="Puntuación de dificultad (0-10)", default_factory=5)
+    weight: int = Field(ge=0, le=10, description="Peso para el examen(0-10)", default_factory= 5)
     last_updated: datetime = Field(default_factory=datetime.now)
     confidence_level: Literal["baja", "media", "alta"] = Field(default="media")
     topics_mastered: List[str] = Field(default_factory=list, description="Temas específicos dominados")
@@ -331,6 +331,7 @@ class EstadoConversacion(BaseModel):
     respuesta_math_expert: Optional[str] = Field(default=None)
     respuesta_exam_creator: Optional[str] = Field(default=None)
     respuesta_student_simulator: Optional[str] = Field(default=None)
+    respuesta_planning: Optional[str] = Field(default=None)
     
     # Control de flujo
     tipo_ayuda_necesaria: Optional[str] = Field(default=None)
