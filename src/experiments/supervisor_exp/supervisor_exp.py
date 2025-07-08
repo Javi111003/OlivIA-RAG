@@ -26,11 +26,9 @@ async def run_supervisor_experiment(test_cases, results_path):
             estado_estudiante=EstudianteProfile(),
             bdi_state=BDIState()
         )
-        # Si hay contexto especial, aplicarlo
         if "context_state" in case and case["context_state"]:
             for k, v in case["context_state"].items():
                 setattr(estado, k, v)
-        # Ejecutar supervisor
         estado_result = await supervisor.supervisor_chain(estado)
         predicted_agent = estado_result.tipo_ayuda_necesaria
         results.append({
@@ -44,7 +42,6 @@ async def run_supervisor_experiment(test_cases, results_path):
         })
         print(f"{case['id']}: esperado={case['expected_agent']} | predicho={predicted_agent} | {'✅' if predicted_agent == case['expected_agent'] else '❌'}")
 
-    # Guardar resultados
     with open(results_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     print(f"\nResultados guardados en {results_path}")
