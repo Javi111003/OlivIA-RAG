@@ -1,0 +1,296 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Casos de prueba para experimentación del SupervisorAgent",
+    "created": "2025-07-08"
+  },
+  "test_cases": [
+    {
+      "id": "SUP_001",
+      "consulta": "¿Qué es el teorema de Pitágoras?",
+      "agent": "math_expert",
+      "difficulty": "fácil",
+      "category": "definicion",
+      "keywords": ["qué es", "teorema"],
+      "description": "Consulta directa sobre concepto matemático"
+    },
+    {
+      "id": "SUP_002",
+      "consulta": "Crea un examen sobre álgebra básica",
+      "agent": "exam_creator",
+      "difficulty": "fácil",
+      "category": "crear_examen",
+      "keywords": ["crea", "examen", "álgebra"],
+      "description": "Solicitud directa de creación de examen"
+    },
+    {
+      "id": "SUP_003",
+      "consulta": "Haz un plan de estudio para matemáticas",
+      "agent": "planning",
+      "difficulty": "fácil",
+      "category": "planificacion",
+      "keywords": ["plan de estudio", "matemáticas"],
+      "description": "Solicitud directa de planificación"
+    },
+    {
+      "id": "SUP_004",
+      "consulta": "¿Está bien explicado?",
+      "agent": "evaluator",
+      "difficulty": "medio",
+      "category": "evaluacion",
+      "keywords": ["está bien", "explicado"],
+      "description": "Pregunta contextual que requiere evaluación",
+      "context_state": {
+        "respuesta_math_expert": "Explicación del teorema de Pitágoras...",
+        "estado_actual": "math_expert_completado"
+      }
+    },
+    {
+      "id": "SUP_005",
+      "consulta": "No entiendo cómo resolver ecuaciones cuadráticas",
+      "agent": "math_expert",
+      "difficulty": "medio",
+      "category": "explicacion",
+      "keywords": ["no entiendo", "resolver", "ecuaciones cuadráticas"],
+      "description": "Expresión de confusión pidiendo explicación"
+    },
+    {
+      "id": "SUP_006",
+      "consulta": "Genera preguntas de práctica sobre geometría",
+      "agent": "exam_creator",
+      "difficulty": "fácil",
+      "category": "practica",
+      "keywords": ["genera", "preguntas", "práctica", "geometría"],
+      "description": "Solicitud de ejercicios de práctica"
+    },
+    {
+      "id": "SUP_007",
+      "consulta": "¿Cómo debería estudiar cálculo este semestre?",
+      "agent": "planning",
+      "difficulty": "medio",
+      "category": "planificacion",
+      "keywords": ["cómo", "estudiar", "cálculo"],
+      "description": "Solicitud de estrategia de estudio"
+    },
+    {
+      "id": "SUP_008",
+      "consulta": "Demuestra que la suma de ángulos internos de un triángulo es 180°",
+      "agent": "math_expert",
+      "difficulty": "medio",
+      "category": "demostracion",
+      "keywords": ["demuestra", "ángulos", "triángulo"],
+      "description": "Solicitud de demostración matemática"
+    },
+    {
+      "id": "SUP_009",
+      "consulta": "Necesito practicar integrales",
+      "agent": "exam_creator",
+      "difficulty": "medio",
+      "category": "practica",
+      "keywords": ["practicar", "integrales"],
+      "description": "Solicitud de ejercicios de práctica"
+    },
+    {
+      "id": "SUP_010",
+      "consulta": "Tengo problemas con matemáticas, ¿qué hago?",
+      "agent": "math_expert",
+      "difficulty": "ambiguo",
+      "category": "consulta_ambigua",
+      "keywords": ["problemas", "matemáticas", "qué hago"],
+      "description": "Consulta ambigua que puede ir a varios agentes"
+    },
+    {
+      "id": "SUP_011",
+      "consulta": "Haz un quiz sobre trigonometría",
+      "agent": "exam_creator",
+      "difficulty": "fácil",
+      "category": "crear_quiz",
+      "keywords": ["haz", "quiz", "trigonometría"],
+      "description": "Solicitud directa de creación de quiz"
+    },
+    {
+      "id": "SUP_012",
+      "consulta": "¿Cuál es la diferencia entre límites y derivadas?",
+      "agent": "math_expert",
+      "difficulty": "medio",
+      "category": "comparacion",
+      "keywords": ["diferencia", "límites", "derivadas"],
+      "description": "Comparación entre conceptos matemáticos"
+    },
+    {
+      "id": "SUP_013",
+      "consulta": "Organiza mi tiempo de estudio para el examen final",
+      "agent": "planning",
+      "difficulty": "medio",
+      "category": "organizacion",
+      "keywords": ["organiza", "tiempo", "estudio", "examen final"],
+      "description": "Solicitud de organización temporal"
+    },
+    {
+      "id": "SUP_014",
+      "consulta": "¿Puedes darme ejercicios para practicar derivadas?",
+      "agent": "exam_creator",
+      "difficulty": "medio",
+      "category": "practica",
+      "keywords": ["ejercicios", "practicar", "derivadas"],
+      "description": "Solicitud de ejercicios de práctica"
+    },
+    {
+      "id": "SUP_015",
+      "consulta": "Explícame cómo funcionan las matrices",
+      "agent": "math_expert",
+      "difficulty": "medio",
+      "category": "explicacion",
+      "keywords": ["explícame", "matrices"],
+      "description": "Solicitud de explicación de concepto"
+    },
+    {
+      "id": "SUP_016",
+      "consulta": "Quiero mejorar en matemáticas, dame algo para hacer",
+      "agent": "exam_creator",
+      "difficulty": "ambiguo",
+      "category": "mejora_general",
+      "keywords": ["mejorar", "matemáticas", "algo para hacer"],
+      "description": "Consulta ambigua que puede ir a exam_creator o planning"
+    },
+    {
+      "id": "SUP_017",
+      "consulta": "Necesito ayuda para organizarme mejor",
+      "agent": "planning",
+      "difficulty": "ambiguo",
+      "category": "organizacion_general",
+      "keywords": ["organizarme", "ayuda"],
+      "description": "Solicitud general de organización"
+    },
+    {
+      "id": "SUP_018",
+      "consulta": "¿Qué tan buena fue mi respuesta anterior?",
+      "agent": "evaluator",
+      "difficulty": "medio",
+      "category": "evaluacion",
+      "keywords": ["qué tan buena", "respuesta anterior"],
+      "description": "Solicitud de evaluación de respuesta previa",
+      "context_state": {
+        "respuesta_math_expert": "Respuesta anterior sobre álgebra",
+        "estado_actual": "math_expert_completado"
+      }
+    },
+    {
+      "id": "SUP_019",
+      "consulta": "¿Puedes explicarme la probabilidad básica?",
+      "agent": "math_expert",
+      "difficulty": "fácil",
+      "category": "explicacion",
+      "keywords": ["explicarme", "probabilidad básica"],
+      "description": "Solicitud de explicación de concepto básico"
+    },
+    {
+      "id": "SUP_020",
+      "consulta": "Dame ejercicios para practicar estadística descriptiva",
+      "agent": "exam_creator",
+      "difficulty": "medio",
+      "category": "practica",
+      "keywords": ["ejercicios", "practicar", "estadística descriptiva"],
+      "description": "Solicitud de ejercicios de práctica"
+    },
+    {
+      "id": "SUP_021",
+      "consulta": "¿Puedes explicarme integrales y darme ejercicios para practicar?",
+      "agent": "math_expert",
+      "difficulty": "ambiguo",
+      "category": "explicacion_practica",
+      "keywords": ["explicarme", "integrales", "ejercicios", "practicar"],
+      "description": "Consulta que mezcla explicación y práctica, puede confundir entre math_expert y exam_creator"
+    },
+    {
+      "id": "SUP_022",
+      "consulta": "¿Eso está bien?",
+      "agent": "evaluator",
+      "difficulty": "ambiguo",
+      "category": "evaluacion_contextual",
+      "keywords": ["eso", "bien"],
+      "description": "Pregunta muy dependiente del contexto anterior",
+      "context_state": {
+        "respuesta_math_expert": "Explicación sobre derivadas",
+        "estado_actual": "math_expert_completado"
+      }
+    },
+    {
+      "id": "SUP_023",
+      "consulta": "Quiero mejorar en matemáticas, ¿por dónde empiezo?",
+      "agent": "planning",
+      "difficulty": "ambiguo",
+      "category": "planificacion_ambigua",
+      "keywords": ["mejorar", "matemáticas", "empiezo"],
+      "description": "Consulta que puede confundirse con exam_creator o math_expert"
+    },
+    {
+      "id": "SUP_024",
+      "consulta": "No me sale nada de lo de mates, ¿qué hago?",
+      "agent": "math_expert",
+      "difficulty": "ambiguo",
+      "category": "consulta_informal",
+      "keywords": ["no me sale", "mates", "qué hago"],
+      "description": "Consulta informal y poco específica"
+    },
+    {
+      "id": "SUP_025",
+      "consulta": "¿Puedes explicarme matrices y también cómo resolver ecuaciones cuadráticas?",
+      "agent": "math_expert",
+      "difficulty": "difícil",
+      "category": "explicacion_multiple",
+      "keywords": ["explicarme", "matrices", "ecuaciones cuadráticas"],
+      "description": "Consulta que abarca varios temas a la vez"
+    },
+    {
+      "id": "SUP_026",
+      "consulta": "¿Eso está correcto?",
+      "agent": "evaluator",
+      "difficulty": "difícil",
+      "category": "evaluacion_sin_contexto",
+      "keywords": ["eso", "correcto"],
+      "description": "Pregunta de evaluación sin contexto claro"
+    },
+    {
+      "id": "SUP_027",
+      "consulta": "¿Me puedes dar un plan de estudio con ejercicios diarios para álgebra?",
+      "agent": "planning",
+      "difficulty": "difícil",
+      "category": "planificacion_practica",
+      "keywords": ["plan de estudio", "ejercicios diarios", "álgebra"],
+      "description": "Consulta que mezcla planificación y práctica"
+    },
+    {  
+      "id": "SUP_028",
+      "consulta": "No quiero ejercicios, solo quiero entender derivadas.",
+      "agent": "math_expert",
+      "difficulty": "difícil",
+      "category": "negacion_practica",
+      "keywords": ["no quiero ejercicios", "entender", "derivadas"],
+      "description": "Consulta que explícitamente rechaza ejercicios"
+    },
+    {
+      "id": "SUP_029",
+      "consulta": "¿Cómo sé si ya domino integrales?",
+      "agent": "evaluator",
+      "difficulty": "difícil",
+      "category": "autoevaluacion",
+      "keywords": ["sé", "domino", "integrales"],
+      "description": "Consulta de autoevaluación, puede confundirse con exam_creator"
+    },
+    {
+        "id": "SUP_030",
+        "consulta": "¿Por qué me equivoqué en el último ejercicio?",
+        "agent": "evaluator",
+        "difficulty": "difícil",
+        "category": "analisis_error",
+        "keywords": ["por qué", "equivoqué", "último ejercicio"],
+        "description": "Consulta que requiere análisis de error previo",
+        "context_state": {
+            "respuesta_exam_creator": "Tu respuesta fue incorrecta en el ejercicio 3.",
+            "estado_actual": "exam_creator_completado"
+        }
+    }
+  ]
+
+}
