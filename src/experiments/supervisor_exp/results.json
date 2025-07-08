@@ -1,0 +1,272 @@
+[
+  {
+    "id": "SUP_001",
+    "consulta": "¿Qué es el teorema de Pitágoras?",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "fácil",
+    "category": "definicion",
+    "correct": true
+  },
+  {
+    "id": "SUP_002",
+    "consulta": "Crea un examen sobre álgebra básica",
+    "expected_agent": "exam_creator",
+    "predicted_agent": "exam_creator",
+    "difficulty": "fácil",
+    "category": "crear_examen",
+    "correct": true
+  },
+  {
+    "id": "SUP_003",
+    "consulta": "Haz un plan de estudio para matemáticas",
+    "expected_agent": "planning",
+    "predicted_agent": "planning",
+    "difficulty": "fácil",
+    "category": "planificacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_004",
+    "consulta": "¿Está bien explicado?",
+    "expected_agent": "evaluator",
+    "predicted_agent": "evaluator",
+    "difficulty": "medio",
+    "category": "evaluacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_005",
+    "consulta": "No entiendo cómo resolver ecuaciones cuadráticas",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "medio",
+    "category": "explicacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_006",
+    "consulta": "Genera preguntas de práctica sobre geometría",
+    "expected_agent": "exam_creator",
+    "predicted_agent": "exam_creator",
+    "difficulty": "fácil",
+    "category": "practica",
+    "correct": true
+  },
+  {
+    "id": "SUP_007",
+    "consulta": "¿Cómo debería estudiar cálculo este semestre?",
+    "expected_agent": "planning",
+    "predicted_agent": "planning",
+    "difficulty": "medio",
+    "category": "planificacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_008",
+    "consulta": "Demuestra que la suma de ángulos internos de un triángulo es 180°",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "medio",
+    "category": "demostracion",
+    "correct": true
+  },
+  {
+    "id": "SUP_009",
+    "consulta": "Necesito practicar integrales",
+    "expected_agent": "exam_creator",
+    "predicted_agent": "exam_creator",
+    "difficulty": "medio",
+    "category": "practica",
+    "correct": true
+  },
+  {
+    "id": "SUP_010",
+    "consulta": "Tengo problemas con matemáticas, ¿qué hago?",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "ambiguo",
+    "category": "consulta_ambigua",
+    "correct": true
+  },
+  {
+    "id": "SUP_011",
+    "consulta": "Haz un quiz sobre trigonometría",
+    "expected_agent": "exam_creator",
+    "predicted_agent": "exam_creator",
+    "difficulty": "fácil",
+    "category": "crear_quiz",
+    "correct": true
+  },
+  {
+    "id": "SUP_012",
+    "consulta": "¿Cuál es la diferencia entre límites y derivadas?",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "medio",
+    "category": "comparacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_013",
+    "consulta": "Organiza mi tiempo de estudio para el examen final",
+    "expected_agent": "planning",
+    "predicted_agent": "planning",
+    "difficulty": "medio",
+    "category": "organizacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_014",
+    "consulta": "¿Puedes darme ejercicios para practicar derivadas?",
+    "expected_agent": "exam_creator",
+    "predicted_agent": "exam_creator",
+    "difficulty": "medio",
+    "category": "practica",
+    "correct": true
+  },
+  {
+    "id": "SUP_015",
+    "consulta": "Explícame cómo funcionan las matrices",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "medio",
+    "category": "explicacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_016",
+    "consulta": "Quiero mejorar en matemáticas, dame algo para hacer",
+    "expected_agent": "exam_creator",
+    "predicted_agent": "planning",
+    "difficulty": "ambiguo",
+    "category": "mejora_general",
+    "correct": false
+  },
+  {
+    "id": "SUP_017",
+    "consulta": "Necesito ayuda para organizarme mejor",
+    "expected_agent": "planning",
+    "predicted_agent": "planning",
+    "difficulty": "ambiguo",
+    "category": "organizacion_general",
+    "correct": true
+  },
+  {
+    "id": "SUP_018",
+    "consulta": "¿Qué tan buena fue mi respuesta anterior?",
+    "expected_agent": "evaluator",
+    "predicted_agent": "evaluator",
+    "difficulty": "medio",
+    "category": "evaluacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_019",
+    "consulta": "¿Puedes explicarme la probabilidad básica?",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "fácil",
+    "category": "explicacion",
+    "correct": true
+  },
+  {
+    "id": "SUP_020",
+    "consulta": "Dame ejercicios para practicar estadística descriptiva",
+    "expected_agent": "exam_creator",
+    "predicted_agent": "exam_creator",
+    "difficulty": "medio",
+    "category": "practica",
+    "correct": true
+  },
+  {
+    "id": "SUP_021",
+    "consulta": "¿Puedes explicarme integrales y darme ejercicios para practicar?",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "ambiguo",
+    "category": "explicacion_practica",
+    "correct": true
+  },
+  {
+    "id": "SUP_022",
+    "consulta": "¿Eso está bien?",
+    "expected_agent": "evaluator",
+    "predicted_agent": "evaluator",
+    "difficulty": "ambiguo",
+    "category": "evaluacion_contextual",
+    "correct": true
+  },
+  {
+    "id": "SUP_023",
+    "consulta": "Quiero mejorar en matemáticas, ¿por dónde empiezo?",
+    "expected_agent": "planning",
+    "predicted_agent": "planning",
+    "difficulty": "ambiguo",
+    "category": "planificacion_ambigua",
+    "correct": true
+  },
+  {
+    "id": "SUP_024",
+    "consulta": "No me sale nada de lo de mates, ¿qué hago?",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "ambiguo",
+    "category": "consulta_informal",
+    "correct": true
+  },
+  {
+    "id": "SUP_025",
+    "consulta": "¿Puedes explicarme matrices y también cómo resolver ecuaciones cuadráticas?",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "difícil",
+    "category": "explicacion_multiple",
+    "correct": true
+  },
+  {
+    "id": "SUP_026",
+    "consulta": "¿Eso está correcto?",
+    "expected_agent": "evaluator",
+    "predicted_agent": "math_expert",
+    "difficulty": "difícil",
+    "category": "evaluacion_sin_contexto",
+    "correct": false
+  },
+  {
+    "id": "SUP_027",
+    "consulta": "¿Me puedes dar un plan de estudio con ejercicios diarios para álgebra?",
+    "expected_agent": "planning",
+    "predicted_agent": "planning",
+    "difficulty": "difícil",
+    "category": "planificacion_practica",
+    "correct": true
+  },
+  {
+    "id": "SUP_028",
+    "consulta": "No quiero ejercicios, solo quiero entender derivadas.",
+    "expected_agent": "math_expert",
+    "predicted_agent": "math_expert",
+    "difficulty": "difícil",
+    "category": "negacion_practica",
+    "correct": true
+  },
+  {
+    "id": "SUP_029",
+    "consulta": "¿Cómo sé si ya domino integrales?",
+    "expected_agent": "evaluator",
+    "predicted_agent": "math_expert",
+    "difficulty": "difícil",
+    "category": "autoevaluacion",
+    "correct": false
+  },
+  {
+    "id": "SUP_030",
+    "consulta": "¿Por qué me equivoqué en el último ejercicio?",
+    "expected_agent": "evaluator",
+    "predicted_agent": "math_expert",
+    "difficulty": "difícil",
+    "category": "analisis_error",
+    "correct": false
+  }
+]
